@@ -1,4 +1,4 @@
-// RIM - Remote Interfaces Monitoring
+// RIM - Remote Interfaces Monitor
 
 /* Copyright (c) 2014 Andrea Masi
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -288,15 +288,17 @@ func presentSingleResult(r *jobResult) {
 
 func presentResults(results []interfaceData) {
 	fmt.Printf(
-		"%20s%12s%12s%12s%12s%12s%12s%12s\n",
+		"%20s%12s%9s%9s%12s%12s%12s%12s%12s%12s\n",
 		"Host",
 		"Interface",
 		"Rx-KB/s",
 		"Tx-KB/s",
-		"Rx-Drops/s",
-		"Tx-Drops/s",
-		"Rx-Errors/s",
-		"Tx-Errors/s",
+		"Rx-Pckts/s",
+		"Tx-Pckts/s",
+		"Rx-Drp/s",
+		"Tx-Drp/s",
+		"Rx-Err/s",
+		"Tx-Err/s",
 	)
 	for _, r := range results {
 		if r.err != nil {
@@ -304,8 +306,10 @@ func presentResults(results []interfaceData) {
 		} else {
 			fmt.Printf("%20s", r.host)
 			fmt.Printf("%12s", r.name)
-			fmt.Printf("%12d", uint64(r.rates["rx-Bps"]/1024))
-			fmt.Printf("%12d", uint64(r.rates["tx-Bps"]/1024))
+			fmt.Printf("%9d", uint64(r.rates["rx-Bps"]/1024))
+			fmt.Printf("%9d", uint64(r.rates["tx-Bps"]/1024))
+			fmt.Printf("%12d", r.rates["rx-pps"])
+			fmt.Printf("%12d", r.rates["tx-pps"])
 			fmt.Printf("%12d", r.rates["rx-dps"])
 			fmt.Printf("%12d", r.rates["tx-dps"])
 			fmt.Printf("%12d", r.rates["rx-eps"])
