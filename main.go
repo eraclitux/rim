@@ -291,8 +291,8 @@ func presentResults(results []interfaceData) {
 		"%20s%12s%9s%9s%12s%12s%12s%12s%12s%12s\n",
 		"Host",
 		"Interface",
-		"Rx-KB/s",
-		"Tx-KB/s",
+		"Rx-Kb/s",
+		"Tx-Kb/s",
 		"Rx-Pckts/s",
 		"Tx-Pckts/s",
 		"Rx-Drp/s",
@@ -306,8 +306,8 @@ func presentResults(results []interfaceData) {
 		} else {
 			fmt.Printf("%20s", r.host)
 			fmt.Printf("%12s", r.name)
-			fmt.Printf("%9d", uint64(r.rates["rx-Bps"]/1024))
-			fmt.Printf("%9d", uint64(r.rates["tx-Bps"]/1024))
+			fmt.Printf("%9d", uint64(r.rates["rx-Bps"]*8/1024))
+			fmt.Printf("%9d", uint64(r.rates["tx-Bps"]*8/1024))
 			fmt.Printf("%12d", r.rates["rx-pps"])
 			fmt.Printf("%12d", r.rates["tx-pps"])
 			fmt.Printf("%12d", r.rates["rx-dps"])
