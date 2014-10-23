@@ -256,19 +256,6 @@ func parallelizeWorkers(jQueue chan job) {
 	}
 }
 
-// sortAndPresent gets results from workes, sorts and displays them.
-// Deprecated
-func sortAndPresent(jobDone, displayDone chan<- struct{}, results <-chan jobResult) {
-	iData := []interfaceData{}
-	for res := range results {
-		iData = append(iData, unpackJobResult(&res)...)
-		//presentResults(iData)
-		jobDone <- struct{}{}
-	}
-	presentResults(iData)
-	displayDone <- struct{}{}
-}
-
 func presentSingleResult(r *jobResult) {
 	fmt.Printf("%20.20s%12.12s%8.8s%8.8s\n", "Host", "Interface", "RX-KBps", "TX-KBps")
 	if r.err != nil {
@@ -286,7 +273,7 @@ func presentSingleResult(r *jobResult) {
 	}
 }
 
-func presentResults(results []interfaceData) {
+func printHead() {
 	fmt.Printf(
 		"%20s%12s%9s%9s%12s%12s%12s%12s%12s%12s\n",
 		"Host",
@@ -300,7 +287,13 @@ func presentResults(results []interfaceData) {
 		"Rx-Err/s",
 		"Tx-Err/s",
 	)
-	for _, r := range results {
+}
+
+func displayResults(results []interfaceData, noHead bool) {
+	for i, r := range results {
+		if i % 40 == 0 && !noHead {
+			printHead()
+		}
 		if r.err != nil {
 			fmt.Println("[ERROR]", r.host, r.err)
 		} else {
@@ -343,6 +336,7 @@ func main() {
 	hostsFileFlag := flag.String("f", "[FILE]", "File cointaining target hosts, one per line.")
 	userFlag := flag.String("u", "[USER]", "Ssh username.")
 	passwdFlag := flag.String("p", "[PASSWORD]", "Ssh password for remote hosts. Automatically use ssh-agent as fallback.")
+	noHeadFlag := flag.Bool("n", false, "Do not show titles.")
 	flag.Parse()
 	hosts := getHostsFromFile(*hostsFileFlag)
 	sshConfig := createSshConfig(*userFlag, *passwdFlag)
@@ -358,7 +352,7 @@ func main() {
 			resultCounts++
 			interfacesData = append(interfacesData, unpackJobResult(&jobResult)...)
 			if resultCounts == len(hosts) {
-				presentResults(interfacesData)
+				displayResults(interfacesData, *noHeadFlag)
 				return
 			}
 		}
