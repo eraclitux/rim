@@ -6,6 +6,38 @@ Command line tool to get status of remote network interfaces on linux servers.
 
 It reads information exposed through ``/proc`` file system using ssh connections so no remote agents are needed on targets.
 
-Important notices
-=================
-This code is a work in progress, APIs (mainly intended as its output) can quickly change.
+.. contents::
+
+Usage examples
+==============
+
+Put target hostnames in a file, one per line es.: ``~/data/target_hosts.txt``. It is possible specify a different port than ``22`` using syntax::
+
+        myhost.tld[:port]
+
+Find top-talkers
+----------------
+
+Interfaces most active receiving by Kb/s::
+
+        rim -f ~/data/target_hosts.txt -n | sort -k3 -n -r | less
+
+Interfaces most active transmitting by Packets/s::
+
+        rim -f ~/data/target_hosts.txt -n | sort -k6 -n -r | less
+
+Spot problems
+-------------
+
+Many anomalies on network interfaces can be easily spotted via Drops/s and Errors/s which are printed in columns 7-10::
+
+        rim -f ~/data/target_hosts.txt -n | sort -k7 -k8 -n -r | less
+
+``-n`` do not show titles. Without ``-p`` rim will try no password authentication and ``ssh-agent`` as fallback. Default user is root, another one can be used with ``-u`` flag.
+
+Note
+----
+
+In case of problems getting info from remote hosts errors are printed to ``stderr`` so you must redirect it to stdout propagate them throght pipes::
+
+        rim -f ~/data/target_hosts.txt -n 2>&1 | sort -k7 -k8 -n -r | less
