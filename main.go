@@ -337,7 +337,12 @@ func main() {
 	userFlag := flag.String("u", "root", "[USERNAME] ssh username.")
 	passwdFlag := flag.String("p", "nopassword", "[PASSWORD] ssh password for remote hosts. Automatically use ssh-agent as fallback.")
 	noHeadFlag := flag.Bool("n", false, "Do not show titles.")
+	versionFlag := flag.Bool("v", false, "Show version and exit")
 	flag.Parse()
+	if *versionFlag {
+		fmt.Println("RIM - Remote Interface Monitor 1.0.0-beta")
+		return
+	}
 	hosts := getHostsFromFile(*hostsFileFlag)
 	sshConfig := createSshConfig(*userFlag, *passwdFlag)
 	resultCounts := 0
