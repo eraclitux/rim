@@ -291,11 +291,11 @@ func printHead() {
 
 func displayResults(results []interfaceData, noHead bool) {
 	for i, r := range results {
-		if i % 40 == 0 && !noHead {
+		if i%40 == 0 && !noHead {
 			printHead()
 		}
 		if r.err != nil {
-			fmt.Println("[ERROR]", r.host, r.err)
+			fmt.Fprintln(os.Stderr, "[ERROR]", r.host, r.err)
 		} else {
 			fmt.Printf("%20s", r.host)
 			fmt.Printf("%12s", r.name)
@@ -314,13 +314,13 @@ func displayResults(results []interfaceData, noHead bool) {
 
 func getHostsFromFile(path string) []string {
 	// FIXME sanityze user input
-	if path == "[FILE]" {
+	if path == "{filename}" {
 		fmt.Fprintln(os.Stderr, "-f is mandatory")
 		os.Exit(2)
 	}
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error reading file")
+		fmt.Fprintln(os.Stderr, "Error reading file", err)
 		os.Exit(2)
 	}
 	hosts := strings.Split(string(bytes), "\n")
@@ -333,9 +333,9 @@ func getHostsFromFile(path string) []string {
 func main() {
 	jobsQueue := make(chan job, workers)
 	resultQueue := make(chan jobResult, workers)
-	hostsFileFlag := flag.String("f", "[FILE]", "File cointaining target hosts, one per line.")
-	userFlag := flag.String("u", "[USER]", "Ssh username.")
-	passwdFlag := flag.String("p", "[PASSWORD]", "Ssh password for remote hosts. Automatically use ssh-agent as fallback.")
+	hostsFileFlag := flag.String("f", "{filename}", " [FILE] file containing target hosts, one per line.")
+	userFlag := flag.String("u", "root", "[USERNAME] ssh username.")
+	passwdFlag := flag.String("p", "nopassword", "[PASSWORD] ssh password for remote hosts. Automatically use ssh-agent as fallback.")
 	noHeadFlag := flag.Bool("n", false, "Do not show titles.")
 	flag.Parse()
 	hosts := getHostsFromFile(*hostsFileFlag)
