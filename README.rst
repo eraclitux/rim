@@ -1,8 +1,10 @@
 ===============================
-RIM - Remote Interfeces Monitor
+RIM - Remote Interfaces Monitor
 ===============================
 
 Command line tool to get status of remote network interfaces on linux servers.
+
+On a multicore machine can concurrently handle hundreds of servers per time.
 
 It reads information exposed through ``/proc`` file system using ssh connections so no remote agents are needed on targets.
 
@@ -11,7 +13,7 @@ It reads information exposed through ``/proc`` file system using ssh connections
 Usage examples
 ==============
 
-Put target hostnames in a file, one per line es.: ``~/data/target_hosts.txt``. It is possible specify a different port than ``22`` using syntax::
+Put target hostnames in a file, one per line es.: ``~/data/target_hosts.txt``. It is possible to specify a different port than ``22`` using syntax::
 
         myhost.tld[:port]
 
@@ -38,6 +40,6 @@ Many anomalies on network interfaces can be easily spotted via Drops/s and Error
 Note
 ----
 
-In case of problems getting info from remote hosts errors are printed to ``stderr`` so you must redirect it to stdout propagate them throght pipes::
+In case of problems getting info from remote hosts errors are printed to ``stderr`` so you must redirect it to stdout to propagate them throgh pipes::
 
         rim -f ~/data/target_hosts.txt -n 2>&1 | sort -k7 -k8 -n -r | less
