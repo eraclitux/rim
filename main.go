@@ -24,8 +24,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"code.google.com/p/go.crypto/ssh"
-	"code.google.com/p/go.crypto/ssh/agent"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -35,6 +33,9 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 )
 
 var workers = runtime.NumCPU()
@@ -228,7 +229,7 @@ func createSshConfig(user, passwd string) ssh.ClientConfig {
 			authMethod := ssh.PublicKeysCallback(agentClient.Signers)
 			authMethods = append(authMethods, authMethod)
 			// FIXME works even without calling agent.ForwardToAgent()?
-			debugPrintln("ssh-agent forwarding configured")
+			debugPrintln("ssh-agent configured")
 		}
 	}
 	return ssh.ClientConfig{

@@ -2,9 +2,9 @@
 RIM - Remote Interfaces Monitor
 ===============================
 
-Command line tool to get status of remote network interfaces on linux servers. It's like ``vmstat`` for remote interfaces.
+Command line tool to get status of remote network interfaces on linux servers. It's like a ``vmstat`` for remote NICs.
 
-On a multicore machine can concurrently handle hundreds of servers per time.
+On a multicore machine can concurrently handle hundreds of servers per time, fast.
 
 It reads information exposed through ``/proc`` file system using ssh connections so no remote agents are needed on targets. Even *linux bridges* are included in report.
 
