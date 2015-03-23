@@ -41,8 +41,8 @@ import (
 var workers = runtime.NumCPU()
 
 const (
-	RemoteCommand = `cat /proc/net/dev; echo ZZZ; sleep 1; cat /proc/net/dev;`
-	Separator     = "ZZZ\n"
+	remoteCommand = `cat /proc/net/dev; echo ZZZ; sleep 1; cat /proc/net/dev;`
+	separator     = "ZZZ\n"
 )
 
 // interfaceData models single interface' data for a given host
@@ -72,8 +72,8 @@ func unpackJobResult(jr *jobResult) []interfaceData {
 	if jr.err != nil {
 		return []interfaceData{interfaceData{jr.host, "", nil, jr.err}}
 	}
-	for kInterface, vMap := range jr.data {
-		i := interfaceData{jr.host, kInterface, vMap, nil}
+	for keyInterface, valueMap := range jr.data {
+		i := interfaceData{jr.host, keyInterface, valueMap, nil}
 		data = append(data, i)
 	}
 	return data
@@ -145,7 +145,7 @@ func calculateRates(dataAtT2, dataAtT1 map[string]uint64) {
 
 // parseOutput arranges RemoteCommand output and calculates rates
 func parseOutput(out *bytes.Buffer, data map[string]map[string]uint64) error {
-	outBytes := bytes.Split(out.Bytes(), []byte(Separator))
+	outBytes := bytes.Split(out.Bytes(), []byte(separator))
 	// Contains interfaces' value at t1
 	outOne := outBytes[0]
 	// Contains interfaces' value at t2
@@ -204,7 +204,7 @@ func (j *job) getRemoteData() {
 	}
 	defer session.Close()
 	session.Stdout = &output
-	if err := session.Run(RemoteCommand); err != nil {
+	if err := session.Run(remoteCommand); err != nil {
 		j.result <- jobResult{j.host, err, nil}
 		return
 	}
@@ -216,7 +216,7 @@ func (j *job) getRemoteData() {
 	j.result <- jobResult{j.host, nil, data}
 }
 
-func createSshConfig(user, passwd string) ssh.ClientConfig {
+func createSSHConfig(user, passwd string) ssh.ClientConfig {
 	sshAuthSock := os.Getenv("SSH_AUTH_SOCK")
 	authMethods := []ssh.AuthMethod{ssh.Password(passwd)}
 	if sshAuthSock != "" {
@@ -345,7 +345,7 @@ func main() {
 		return
 	}
 	hosts := getHostsFromFile(*hostsFileFlag)
-	sshConfig := createSshConfig(*userFlag, *passwdFlag)
+	sshConfig := createSSHConfig(*userFlag, *passwdFlag)
 	resultCounts := 0
 	interfacesData := make([]interfaceData, 0, len(hosts))
 	runtime.GOMAXPROCS(workers)
