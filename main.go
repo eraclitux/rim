@@ -341,7 +341,7 @@ func main() {
 	versionFlag := flag.Bool("v", false, "Show version and exit")
 	flag.Parse()
 	if *versionFlag {
-		fmt.Println("RIM - Remote Interface Monitor 1.0.0-beta")
+		fmt.Println("RIM - Remote Interface Monitor v1.0.0")
 		return
 	}
 	hosts := getHostsFromFile(*hostsFileFlag)
