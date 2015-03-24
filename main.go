@@ -24,6 +24,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -314,14 +315,15 @@ func displayResults(results []interfaceData, noHead bool) {
 }
 
 func getHostsFromFile(path string) []string {
-	// FIXME sanityze user input
+	bytes := []byte{}
+	err := errors.New("")
 	if path == "{filename}" {
-		fmt.Fprintln(os.Stderr, "-f is mandatory")
-		os.Exit(2)
+		bytes, err = ioutil.ReadAll(os.Stdin)
+	} else {
+		bytes, err = ioutil.ReadFile(path)
 	}
-	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error reading file", err)
+		fmt.Fprintln(os.Stderr, "Error reading input", err)
 		os.Exit(2)
 	}
 	hosts := strings.Split(string(bytes), "\n")
