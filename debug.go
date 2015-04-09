@@ -2,8 +2,11 @@
 
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 func debugPrintln(args ...interface{}) {
-	fmt.Println(args...)
+	fmt.Fprintln(os.Stderr, args...)
 }
