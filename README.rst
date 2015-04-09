@@ -28,6 +28,10 @@ Interfaces most active transmitting by Packets/s::
 
         rim -f ~/data/target_hosts.txt -n | sort -k6 -n -r | head -30
 
+It's also possible to pass targets in a pipe::
+
+        cat ~/data/target_hosts.txt | rim -n | sort -k3 -n
+
 Spot problems
 -------------
 

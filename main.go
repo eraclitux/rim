@@ -18,7 +18,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE. */
-
 package main
 
 import (
@@ -343,7 +342,7 @@ func main() {
 	versionFlag := flag.Bool("v", false, "Show version and exit")
 	flag.Parse()
 	if *versionFlag {
-		fmt.Println("RIM - Remote Interface Monitor v1.0.0")
+		fmt.Println("RIM - Remote Interfaces Monitor v1.0.0")
 		return
 	}
 	hosts := getHostsFromFile(*hostsFileFlag)
