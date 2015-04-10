@@ -55,7 +55,7 @@ func (ms *multiSorter) Less(i, j int) bool {
 	p, q := &ms.interfaces[i], &ms.interfaces[j]
 	var k int
 	for k = 0; k < len(ms.lessFunctions)-1; k++ {
-		less := ms.lessFunctions[i]
+		less := ms.lessFunctions[k]
 		switch {
 		case less(p, q):
 			return true
@@ -67,7 +67,7 @@ func (ms *multiSorter) Less(i, j int) bool {
 	// returns result of last lessFunc
 	// FIXME this should be always false so can it be avoided?
 	//return false
-	return ms.lessFunctions[i](p, q)
+	return ms.lessFunctions[k](p, q)
 }
 
 func printHead() {
