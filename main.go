@@ -81,39 +81,39 @@ func splitOnSpaces(s string) []string {
 func makeValueMap(data []string) map[string]uint64 {
 	dataMap := make(map[string]uint64)
 	for i, s := range data {
-		// FIXME parse error
+		// FIXME handle convertion error
 		converted, _ := strconv.ParseUint(s, 10, 64)
 		switch i {
 		case 0:
-			// here its not bytes per second but absolute bytes at t2
+			// here it's not bytes per second but absolute bytes at t2
 			// however we'll store Bps later
 			dataMap["rx-Bps"] = converted
 		case 1:
-			// here its not packets per second but absolute bytes at t2
+			// here it's not packets per second but absolute bytes at t2
 			// however we'll store pps later
 			dataMap["rx-pps"] = converted
 		case 2:
-			// here its not errors per second but absolute bytes at t2
+			// here it's not errors per second but absolute bytes at t2
 			// however we'll store eps later
 			dataMap["rx-eps"] = converted
 		case 3:
-			// here its not drop per second but absolute bytes at t2
+			// here it's not drop per second but absolute bytes at t2
 			// however we'll store dps later
 			dataMap["rx-dps"] = converted
 		case 8:
-			// here its not bytes per second but absolute bytes at t2
+			// here it's not bytes per second but absolute bytes at t2
 			// however we'll store Bps later
 			dataMap["tx-Bps"] = converted
 		case 9:
-			// here its not bytes per second but absolute bytes at t2
+			// here it's not bytes per second but absolute bytes at t2
 			// however we'll store Bps later
 			dataMap["tx-pps"] = converted
 		case 10:
-			// here its not errors per second but absolute bytes at t2
+			// here it's not errors per second but absolute bytes at t2
 			// however we'll store eps later
 			dataMap["tx-eps"] = converted
 		case 11:
-			// here its not drops per second but absolute bytes at t2
+			// here it's not drops per second but absolute bytes at t2
 			// however we'll store dps later
 			dataMap["tx-dps"] = converted
 		}
@@ -289,6 +289,7 @@ func main() {
 			resultCounts++
 			interfacesData = append(interfacesData, unpackJobResult(&jobResult)...)
 			if resultCounts == len(hosts) {
+				orderBy(byKey("rx-dps"), byKey("rx-Bps")).sort(interfacesData)
 				displayResults(interfacesData, *noHeadFlag)
 				return
 			}
