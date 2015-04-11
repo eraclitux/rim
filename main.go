@@ -9,7 +9,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -255,7 +254,7 @@ func parallelizeWorkers(jQueue chan job) {
 
 func getHostsFromFile(path string) []string {
 	bytes := []byte{}
-	err := errors.New("")
+	var err error
 	if path == "{filename}" {
 		bytes, err = ioutil.ReadAll(os.Stdin)
 	} else {
@@ -263,12 +262,13 @@ func getHostsFromFile(path string) []string {
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error reading input", err)
+		// TODO just return an error and move this inside main
 		os.Exit(2)
 	}
 	hosts := strings.Split(string(bytes), "\n")
 	// remove last empty element
 	hosts = hosts[:len(hosts)-1]
-	debugPrintln("Parsed hosts from file:", hosts)
+	debugPrintln("Parsed hosts:", hosts)
 	return hosts
 }
 
@@ -278,12 +278,19 @@ func main() {
 	hostsFileFlag := flag.String("f", "{filename}", " [FILE] file containing target hosts, one per line, formatted as <hostname>[:port]")
 	userFlag := flag.String("u", "root", "[USERNAME] ssh username.")
 	passwdFlag := flag.String("p", "nopassword", "[PASSWORD] ssh password for remote hosts. Automatically use ssh-agent as fallback.")
+	sortFlag1 := flag.String("k1", "rx-dps", "first sort key.")
+	sortFlag2 := flag.String("k2", "rx-Bps", "second sort key.")
 	noHeadFlag := flag.Bool("n", false, "Do not show titles in output.")
 	versionFlag := flag.Bool("v", false, "Show version and exit")
 	flag.Parse()
 	if *versionFlag {
 		fmt.Println("RIM - Remote Interfaces Monitor v2.0.0-alfa")
 		return
+	}
+	sortKeys, err := sanitizeSortKeys(*sortFlag1, *sortFlag2)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(2)
 	}
 	hosts := getHostsFromFile(*hostsFileFlag)
 	sshConfig := createSSHConfig(*userFlag, *passwdFlag)
@@ -299,7 +306,8 @@ func main() {
 			resultCounts++
 			interfacesData = append(interfacesData, unpackJobResult(&jobResult)...)
 			if resultCounts == len(hosts) {
-				orderBy(byKey("rx-dps"), byKey("rx-Bps")).sort(interfacesData)
+				// we could use an arbitrary number of sort keys...
+				orderBy(byKey(sortKeys[0]), byKey(sortKeys[1])).sort(interfacesData)
 				displayResults(interfacesData, *noHeadFlag)
 				return
 			}

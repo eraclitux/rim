@@ -71,6 +71,27 @@ func (ms *multiSorter) Less(i, j int) bool {
 	return ms.lessFunctions[k](p, q)
 }
 
+// sanitizeSortKeys parse user supplied sorting keys.
+// It returns error if supplied keys are invalid.
+func sanitizeSortKeys(keys ...string) ([]string, error) {
+	vKeys := [...]string{"tx-Bps", "tx-pps", "tx-eps", "tx-dps", "rx-Bps", "rx-pps", "rx-eps", "rx-dps"}
+	found := false
+	for _, k := range keys {
+		for _, v := range vKeys {
+			if k == v {
+				debugPrintln("found matching key", v, k)
+				found = true
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("Invalid sort key: %v. Use one in %v", k, vKeys)
+		}
+		found = false
+	}
+	debugPrintln("Valid supplied sorting keys", keys)
+	return keys, nil
+}
+
 func printHead() {
 	fmt.Printf(
 		"%20s%12s%9s%9s%12s%12s%12s%12s%12s%12s\n",
