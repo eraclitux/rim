@@ -31,7 +31,7 @@ const (
 	separator     = "ZZZ\n"
 )
 
-// interfaceData models single interface' data for a given host
+// interfaceData models single interface' data for a given host.
 type interfaceData struct {
 	host  string
 	name  string
@@ -77,12 +77,15 @@ func splitOnSpaces(s string) []string {
 	return regexp.MustCompile(`\s+`).Split(trimmedS, -1)
 }
 
-// makeValueMap creates map with t2 or t1 values
-func makeValueMap(data []string) map[string]uint64 {
+// makeValueMap creates map with t2 or t1 values.
+func makeValueMap(data []string) (map[string]uint64, error) {
 	dataMap := make(map[string]uint64)
 	for i, s := range data {
 		// FIXME handle convertion error
-		converted, _ := strconv.ParseUint(s, 10, 64)
+		converted, err := strconv.ParseUint(s, 10, 64)
+		if err != nil {
+			return nil, err
+		}
 		switch i {
 		case 0:
 			// here it's not bytes per second but absolute bytes at t2
@@ -118,10 +121,10 @@ func makeValueMap(data []string) map[string]uint64 {
 			dataMap["tx-dps"] = converted
 		}
 	}
-	return dataMap
+	return dataMap, nil
 }
 
-// calculateRates uses t2 values stored in dataAtT2 by makeValueMap to calculate rates
+// calculateRates uses t2 values stored in dataAtT2 by makeValueMap to calculate rates.
 func calculateRates(dataAtT2, dataAtT1 map[string]uint64) {
 	for k, v := range dataAtT2 {
 		// assuming that ΔT is always 1 second (sleep 1)
@@ -129,7 +132,7 @@ func calculateRates(dataAtT2, dataAtT1 map[string]uint64) {
 	}
 }
 
-// parseOutput arranges RemoteCommand output and calculates rates
+// parseOutput arranges RemoteCommand output and calculates rates.
 func parseOutput(out *bytes.Buffer, data map[string]map[string]uint64) error {
 	outBytes := bytes.Split(out.Bytes(), []byte(separator))
 	// Contains interfaces' value at t1
@@ -148,7 +151,11 @@ func parseOutput(out *bytes.Buffer, data map[string]map[string]uint64) error {
 		iface := strings.Replace(splittedRow[0], " ", "", -1)
 		countersData := splitOnSpaces(splittedRow[1])
 		debugPrintln("parsed data @ t2:", iface, countersData)
-		data[iface] = makeValueMap(countersData)
+		var err error
+		data[iface], err = makeValueMap(countersData)
+		if err != nil {
+			return err
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		return err
@@ -164,7 +171,10 @@ func parseOutput(out *bytes.Buffer, data map[string]map[string]uint64) error {
 		// remove white spaces
 		iface := strings.Replace(splittedRow[0], " ", "", -1)
 		countersData := splitOnSpaces(splittedRow[1])
-		dataAtT1 := makeValueMap(countersData)
+		dataAtT1, err := makeValueMap(countersData)
+		if err != nil {
+			return err
+		}
 		debugPrintln("parsed data @ t1:", iface, countersData)
 		calculateRates(data[iface], dataAtT1)
 	}
@@ -265,10 +275,10 @@ func getHostsFromFile(path string) []string {
 func main() {
 	jobsQueue := make(chan job, workers)
 	resultQueue := make(chan jobResult, workers)
-	hostsFileFlag := flag.String("f", "{filename}", " [FILE] file containing target hosts, one per line.")
+	hostsFileFlag := flag.String("f", "{filename}", " [FILE] file containing target hosts, one per line, formatted as <hostname>[:port]")
 	userFlag := flag.String("u", "root", "[USERNAME] ssh username.")
 	passwdFlag := flag.String("p", "nopassword", "[PASSWORD] ssh password for remote hosts. Automatically use ssh-agent as fallback.")
-	noHeadFlag := flag.Bool("n", false, "Do not show titles.")
+	noHeadFlag := flag.Bool("n", false, "Do not show titles in output.")
 	versionFlag := flag.Bool("v", false, "Show version and exit")
 	flag.Parse()
 	if *versionFlag {

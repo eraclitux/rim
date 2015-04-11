@@ -17,7 +17,8 @@ type lessFunc func(e1, e2 *interfaceData) bool
 // k arguments can be any key declared in makeValueMap.
 func byKey(k string) lessFunc {
 	return func(e1, e2 *interfaceData) bool {
-		return e1.rates[k] < e2.rates[k]
+		// reverse order
+		return e1.rates[k] > e2.rates[k]
 	}
 }
 
@@ -88,7 +89,7 @@ func printHead() {
 
 func displayResults(results []interfaceData, noHead bool) {
 	for i, r := range results {
-		if i%40 == 0 && !noHead {
+		if i%20 == 0 && !noHead {
 			printHead()
 		}
 		if r.err != nil {
