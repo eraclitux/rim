@@ -1,30 +1,14 @@
+// Copyright (c) 2014 Andrea Masi. All rights reserved.
+// Use of this source code is governed by a MIT license
+// that can be found in the LICENSE.txt file.
+
 // RIM - Remote Interfaces Monitor
-
-/* Copyright (c) 2014 Andrea Masi
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE. */
-
+// Agentless network interfaces monitor for Linux firewalls/servers
 package main
 
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -46,7 +30,7 @@ const (
 	separator     = "ZZZ\n"
 )
 
-// interfaceData models single interface' data for a given host
+// interfaceData models single interface' data for a given host.
 type interfaceData struct {
 	host  string
 	name  string
@@ -92,51 +76,54 @@ func splitOnSpaces(s string) []string {
 	return regexp.MustCompile(`\s+`).Split(trimmedS, -1)
 }
 
-// makeValueMap creates map with t2 or t1 values
-func makeValueMap(data []string) map[string]uint64 {
+// makeValueMap creates map with t2 or t1 values.
+func makeValueMap(data []string) (map[string]uint64, error) {
 	dataMap := make(map[string]uint64)
 	for i, s := range data {
-		// FIXME parse error
-		converted, _ := strconv.ParseUint(s, 10, 64)
+		// FIXME handle convertion error
+		converted, err := strconv.ParseUint(s, 10, 64)
+		if err != nil {
+			return nil, err
+		}
 		switch i {
 		case 0:
-			// here its not bytes per second but absolute bytes at t2
+			// here it's not bytes per second but absolute bytes at t2
 			// however we'll store Bps later
 			dataMap["rx-Bps"] = converted
 		case 1:
-			// here its not packets per second but absolute bytes at t2
+			// here it's not packets per second but absolute bytes at t2
 			// however we'll store pps later
 			dataMap["rx-pps"] = converted
 		case 2:
-			// here its not errors per second but absolute bytes at t2
+			// here it's not errors per second but absolute bytes at t2
 			// however we'll store eps later
 			dataMap["rx-eps"] = converted
 		case 3:
-			// here its not drop per second but absolute bytes at t2
+			// here it's not drop per second but absolute bytes at t2
 			// however we'll store dps later
 			dataMap["rx-dps"] = converted
 		case 8:
-			// here its not bytes per second but absolute bytes at t2
+			// here it's not bytes per second but absolute bytes at t2
 			// however we'll store Bps later
 			dataMap["tx-Bps"] = converted
 		case 9:
-			// here its not bytes per second but absolute bytes at t2
+			// here it's not bytes per second but absolute bytes at t2
 			// however we'll store Bps later
 			dataMap["tx-pps"] = converted
 		case 10:
-			// here its not errors per second but absolute bytes at t2
+			// here it's not errors per second but absolute bytes at t2
 			// however we'll store eps later
 			dataMap["tx-eps"] = converted
 		case 11:
-			// here its not drops per second but absolute bytes at t2
+			// here it's not drops per second but absolute bytes at t2
 			// however we'll store dps later
 			dataMap["tx-dps"] = converted
 		}
 	}
-	return dataMap
+	return dataMap, nil
 }
 
-// calculateRates uses t2 values stored in dataAtT2 by makeValueMap to calculate rates
+// calculateRates uses t2 values stored in dataAtT2 by makeValueMap to calculate rates.
 func calculateRates(dataAtT2, dataAtT1 map[string]uint64) {
 	for k, v := range dataAtT2 {
 		// assuming that ΔT is always 1 second (sleep 1)
@@ -144,7 +131,7 @@ func calculateRates(dataAtT2, dataAtT1 map[string]uint64) {
 	}
 }
 
-// parseOutput arranges RemoteCommand output and calculates rates
+// parseOutput arranges RemoteCommand output and calculates rates.
 func parseOutput(out *bytes.Buffer, data map[string]map[string]uint64) error {
 	outBytes := bytes.Split(out.Bytes(), []byte(separator))
 	// Contains interfaces' value at t1
@@ -163,7 +150,11 @@ func parseOutput(out *bytes.Buffer, data map[string]map[string]uint64) error {
 		iface := strings.Replace(splittedRow[0], " ", "", -1)
 		countersData := splitOnSpaces(splittedRow[1])
 		debugPrintln("parsed data @ t2:", iface, countersData)
-		data[iface] = makeValueMap(countersData)
+		var err error
+		data[iface], err = makeValueMap(countersData)
+		if err != nil {
+			return err
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		return err
@@ -179,7 +170,10 @@ func parseOutput(out *bytes.Buffer, data map[string]map[string]uint64) error {
 		// remove white spaces
 		iface := strings.Replace(splittedRow[0], " ", "", -1)
 		countersData := splitOnSpaces(splittedRow[1])
-		dataAtT1 := makeValueMap(countersData)
+		dataAtT1, err := makeValueMap(countersData)
+		if err != nil {
+			return err
+		}
 		debugPrintln("parsed data @ t1:", iface, countersData)
 		calculateRates(data[iface], dataAtT1)
 	}
@@ -258,65 +252,9 @@ func parallelizeWorkers(jQueue chan job) {
 	}
 }
 
-func presentSingleResult(r *jobResult) {
-	fmt.Printf("%20.20s%12.12s%8.8s%8.8s\n", "Host", "Interface", "RX-KBps", "TX-KBps")
-	if r.err != nil {
-		fmt.Println(r.host, r.err)
-	} else {
-		// k is remote interface
-		// v is a map with rates
-		for k, v := range r.data {
-			fmt.Printf("%20.20s", r.host)
-			fmt.Printf("%12.12s", k)
-			fmt.Printf("%8d", uint64(v["rx-Bps"]/1024))
-			fmt.Printf("%8d", uint64(v["tx-Bps"]/1024))
-			fmt.Println("")
-		}
-	}
-}
-
-func printHead() {
-	fmt.Printf(
-		"%20s%12s%9s%9s%12s%12s%12s%12s%12s%12s\n",
-		"Host",
-		"Interface",
-		"Rx-Kb/s",
-		"Tx-Kb/s",
-		"Rx-Pckts/s",
-		"Tx-Pckts/s",
-		"Rx-Drp/s",
-		"Tx-Drp/s",
-		"Rx-Err/s",
-		"Tx-Err/s",
-	)
-}
-
-func displayResults(results []interfaceData, noHead bool) {
-	for i, r := range results {
-		if i%40 == 0 && !noHead {
-			printHead()
-		}
-		if r.err != nil {
-			fmt.Fprintln(os.Stderr, "[ERROR]", r.host, r.err)
-		} else {
-			fmt.Printf("%20s", r.host)
-			fmt.Printf("%12s", r.name)
-			fmt.Printf("%9d", uint64(r.rates["rx-Bps"]*8/1024))
-			fmt.Printf("%9d", uint64(r.rates["tx-Bps"]*8/1024))
-			fmt.Printf("%12d", r.rates["rx-pps"])
-			fmt.Printf("%12d", r.rates["tx-pps"])
-			fmt.Printf("%12d", r.rates["rx-dps"])
-			fmt.Printf("%12d", r.rates["tx-dps"])
-			fmt.Printf("%12d", r.rates["rx-eps"])
-			fmt.Printf("%12d", r.rates["tx-eps"])
-			fmt.Println("")
-		}
-	}
-}
-
 func getHostsFromFile(path string) []string {
 	bytes := []byte{}
-	err := errors.New("")
+	var err error
 	if path == "{filename}" {
 		bytes, err = ioutil.ReadAll(os.Stdin)
 	} else {
@@ -324,27 +262,35 @@ func getHostsFromFile(path string) []string {
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error reading input", err)
+		// TODO just return an error and move this inside main
 		os.Exit(2)
 	}
 	hosts := strings.Split(string(bytes), "\n")
 	// remove last empty element
 	hosts = hosts[:len(hosts)-1]
-	debugPrintln("Parsed hosts from file:", hosts)
+	debugPrintln("Parsed hosts:", hosts)
 	return hosts
 }
 
 func main() {
 	jobsQueue := make(chan job, workers)
 	resultQueue := make(chan jobResult, workers)
-	hostsFileFlag := flag.String("f", "{filename}", " [FILE] file containing target hosts, one per line.")
+	hostsFileFlag := flag.String("f", "{filename}", " [FILE] file containing target hosts, one per line, formatted as <hostname>[:port]")
 	userFlag := flag.String("u", "root", "[USERNAME] ssh username.")
 	passwdFlag := flag.String("p", "nopassword", "[PASSWORD] ssh password for remote hosts. Automatically use ssh-agent as fallback.")
-	noHeadFlag := flag.Bool("n", false, "Do not show titles.")
+	sortFlag1 := flag.String("k1", "rx-dps", "first sort key.")
+	sortFlag2 := flag.String("k2", "rx-Kbps", "second sort key.")
+	noHeadFlag := flag.Bool("n", false, "Do not show titles in output.")
 	versionFlag := flag.Bool("v", false, "Show version and exit")
 	flag.Parse()
 	if *versionFlag {
-		fmt.Println("RIM - Remote Interface Monitor v1.0.0")
+		fmt.Println("RIM - Remote Interfaces Monitor v2.0.0-alfa")
 		return
+	}
+	sortKeys, err := sanitizeSortKeys(*sortFlag1, *sortFlag2)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(2)
 	}
 	hosts := getHostsFromFile(*hostsFileFlag)
 	sshConfig := createSSHConfig(*userFlag, *passwdFlag)
@@ -360,6 +306,8 @@ func main() {
 			resultCounts++
 			interfacesData = append(interfacesData, unpackJobResult(&jobResult)...)
 			if resultCounts == len(hosts) {
+				// we could use an arbitrary number of sort keys...
+				orderBy(byKey(sortKeys[0]), byKey(sortKeys[1])).sort(interfacesData)
 				displayResults(interfacesData, *noHeadFlag)
 				return
 			}
