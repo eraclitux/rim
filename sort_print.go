@@ -71,10 +71,22 @@ func (ms *multiSorter) Less(i, j int) bool {
 	return ms.lessFunctions[k](p, q)
 }
 
+// convertKeys convert user suplied sort keys to be used in interfaceData.rates.
+func convertKeys(keys []string) {
+	for i, v := range keys {
+		switch v {
+		case "tx-Kbps":
+			keys[i] = "tx-Bps"
+		case "rx-Kbps":
+			keys[i] = "rx-Bps"
+		}
+	}
+}
+
 // sanitizeSortKeys parse user supplied sorting keys.
 // It returns error if supplied keys are invalid.
 func sanitizeSortKeys(keys ...string) ([]string, error) {
-	vKeys := [...]string{"tx-Bps", "tx-pps", "tx-eps", "tx-dps", "rx-Bps", "rx-pps", "rx-eps", "rx-dps"}
+	vKeys := [...]string{"tx-Kbps", "tx-pps", "tx-eps", "tx-dps", "rx-Kbps", "rx-pps", "rx-eps", "rx-dps"}
 	found := false
 	for _, k := range keys {
 		for _, v := range vKeys {
@@ -89,6 +101,7 @@ func sanitizeSortKeys(keys ...string) ([]string, error) {
 		found = false
 	}
 	debugPrintln("Valid supplied sorting keys", keys)
+	convertKeys(keys)
 	return keys, nil
 }
 

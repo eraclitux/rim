@@ -279,7 +279,7 @@ func main() {
 	userFlag := flag.String("u", "root", "[USERNAME] ssh username.")
 	passwdFlag := flag.String("p", "nopassword", "[PASSWORD] ssh password for remote hosts. Automatically use ssh-agent as fallback.")
 	sortFlag1 := flag.String("k1", "rx-dps", "first sort key.")
-	sortFlag2 := flag.String("k2", "rx-Bps", "second sort key.")
+	sortFlag2 := flag.String("k2", "rx-Kbps", "second sort key.")
 	noHeadFlag := flag.Bool("n", false, "Do not show titles in output.")
 	versionFlag := flag.Bool("v", false, "Show version and exit")
 	flag.Parse()
