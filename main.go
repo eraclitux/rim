@@ -280,6 +280,7 @@ func main() {
 	passwdFlag := flag.String("p", "nopassword", "[PASSWORD] ssh password for remote hosts. Automatically use ssh-agent as fallback.")
 	sortFlag1 := flag.String("k1", "rx-dps", "first sort key.")
 	sortFlag2 := flag.String("k2", "rx-Kbps", "second sort key.")
+	limitFlag := flag.Int("l", 0, "limit printed results to this number, 0 means no limits.")
 	noHeadFlag := flag.Bool("n", false, "Do not show titles in output.")
 	versionFlag := flag.Bool("v", false, "Show version and exit")
 	flag.Parse()
@@ -308,7 +309,13 @@ func main() {
 			if resultCounts == len(hosts) {
 				// we could use an arbitrary number of sort keys...
 				orderBy(byKey(sortKeys[0]), byKey(sortKeys[1])).sort(interfacesData)
-				displayResults(interfacesData, *noHeadFlag)
+				s := []interfaceData{}
+				if *limitFlag == 0 {
+					s = interfacesData
+				} else {
+					s = interfacesData[:*limitFlag]
+				}
+				displayResults(s, *noHeadFlag)
 				return
 			}
 		}

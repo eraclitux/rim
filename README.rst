@@ -17,7 +17,14 @@ Put target hostnames in a file, one per line es.: ``~/data/target_hosts.txt``. I
 
         myhost.tld[:port]
 
-``-k1`` & ``-k2`` set hierarchical sort keys. Supported sorting keys are: tx-Kbps, tx-pps, tx-eps, tx-dps, rx-Kbps, rx-pps, rx-eps, rx-dps. *Default sort settings* are ``1st: rx-dps`` & ``2nd: rx-Kbps`` because these have proven to be the most effective spotting anomalies in the network of cloud service provider where rim has born.
+Sorting
+-------
+
+``-k1`` & ``-k2`` set hierarchical sort keys. Supported sorting keys are::
+
+        tx-Kbps, tx-pps, tx-eps, tx-dps, rx-Kbps, rx-pps, rx-eps, rx-dps
+
+*Default sort settings* are ``1st: rx-dps`` & ``2nd: rx-Kbps`` because these have proven to be the most effective spotting anomalies in the network of cloud service provider where rim has born.
 
 Find top-talkers
 ----------------
@@ -26,18 +33,18 @@ Interfaces most active receiving by Kb/s::
 
         rim -f ~/data/target_hosts.txt -k1 rx-Kbps
 
-Interfaces most active transmitting by Packets/s::
+Interfaces most active transmitting by Packets/s and show first ten::
 
-        rim -f ~/data/target_hosts.txt -k1 tx-Kbps
+        rim -f ~/data/target_hosts.txt -k1 tx-pps -l 10
 
 It's also possible to use ``rim`` in a pipe::
 
-        cat ~/data/target_hosts.txt | rim | head -10
+        cat ~/data/target_hosts.txt | rim | less
 
 Notes
 ~~~~~
 
-In case of problems getting info from remote hosts errors are printed to ``stderr`` so you must redirect it to stdout to propagate them throgh pipes::
+In case of problems getting info from remote hosts, errors are printed to ``stderr`` so you must redirect it to stdout to propagate them throgh pipes::
 
         rim -f ~/data/target_hosts.txt -n 2>&1 | less
 
@@ -56,4 +63,4 @@ Changelog
 ---------
 
 - v2.0.0: it adds sort capabilities, no more need to pipe the output to ``sort``. It breaks APIs (output changed).
-- v1.0.0: initial relase, retrieve info from remotes hosts via ssh.
+- v1.0.0: initial relase, retrieve info from remote hosts via ssh.
