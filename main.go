@@ -275,14 +275,15 @@ func getHostsFromFile(path string) []string {
 func main() {
 	jobsQueue := make(chan job, workers)
 	resultQueue := make(chan jobResult, workers)
-	hostsFileFlag := flag.String("f", "{filename}", " [FILE] file containing target hosts, one per line, formatted as <hostname>[:port]")
+	hostsFileFlag := flag.String("f", "{filename}", " [FILE] file containing target hosts, one per line, formatted as <hostname>[:port].")
 	userFlag := flag.String("u", "root", "[USERNAME] ssh username.")
 	passwdFlag := flag.String("p", "nopassword", "[PASSWORD] ssh password for remote hosts. Automatically use ssh-agent as fallback.")
 	sortFlag1 := flag.String("k1", "rx-dps", "first sort key.")
 	sortFlag2 := flag.String("k2", "rx-Kbps", "second sort key.")
 	limitFlag := flag.Int("l", 0, "limit printed results to this number, 0 means no limits.")
-	noHeadFlag := flag.Bool("n", false, "Do not show titles in output.")
-	versionFlag := flag.Bool("v", false, "Show version and exit")
+	noHeadFlag := flag.Bool("n", false, "do not show titles in output.")
+	extendedFlag := flag.Bool("e", false, "enable extended output.")
+	versionFlag := flag.Bool("v", false, "show version and exit.")
 	flag.Parse()
 	if *versionFlag {
 		fmt.Println("RIM - Remote Interfaces Monitor v2.0.0-alfa")
@@ -315,7 +316,7 @@ func main() {
 				} else {
 					s = interfacesData[:*limitFlag]
 				}
-				displayResults(s, *noHeadFlag)
+				displayResults(s, *noHeadFlag, *extendedFlag)
 				return
 			}
 		}

@@ -33,7 +33,7 @@ Interfaces most active receiving by Kb/s::
 
         rim -f ~/data/target_hosts.txt -k1 rx-Kbps
 
-Interfaces most active transmitting by Packets/s and show first ten::
+Interfaces most active transmitting by Packets/s, the first ten::
 
         rim -f ~/data/target_hosts.txt -k1 tx-pps -l 10
 
@@ -56,6 +56,8 @@ Many anomalies on network interfaces can be easily spotted via Drops/s and Error
 Default sort key are for rx data, to show tx data::
 
         rim -f ~/data/target_hosts.txt -k1 tx-dps -k2 tx-Kbps
+
+To print also Errors/s ``-e`` option must be used.
 
 ``-n`` do not show titles. Without ``-p`` ``rim`` will try no password authentication and ``ssh-agent`` as fallback. Default user is root, another one can be used with ``-u`` flag.
 

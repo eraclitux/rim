@@ -105,26 +105,40 @@ func sanitizeSortKeys(keys ...string) ([]string, error) {
 	return keys, nil
 }
 
-func printHead() {
-	fmt.Printf(
-		"%20s%12s%9s%9s%12s%12s%12s%12s%12s%12s\n",
-		"Host",
-		"Interface",
-		"Rx-Kb/s",
-		"Tx-Kb/s",
-		"Rx-Pckts/s",
-		"Tx-Pckts/s",
-		"Rx-Drp/s",
-		"Tx-Drp/s",
-		"Rx-Err/s",
-		"Tx-Err/s",
-	)
+func printHead(extOut bool) {
+	if extOut {
+		fmt.Printf(
+			"%20s%12s%9s%9s%12s%12s%12s%12s%12s%12s\n",
+			"Host",
+			"Interface",
+			"Rx-Kb/s",
+			"Tx-Kb/s",
+			"Rx-Pckts/s",
+			"Tx-Pckts/s",
+			"Rx-Drp/s",
+			"Tx-Drp/s",
+			"Rx-Err/s",
+			"Tx-Err/s",
+		)
+	} else {
+		fmt.Printf(
+			"%20s%12s%9s%9s%12s%12s%12s%12s\n",
+			"Host",
+			"Interface",
+			"Rx-Kb/s",
+			"Tx-Kb/s",
+			"Rx-Pckts/s",
+			"Tx-Pckts/s",
+			"Rx-Drp/s",
+			"Tx-Drp/s",
+		)
+	}
 }
 
-func displayResults(results []interfaceData, noHead bool) {
+func displayResults(results []interfaceData, noHead bool, extOut bool) {
 	for i, r := range results {
 		if i%20 == 0 && !noHead {
-			printHead()
+			printHead(extOut)
 		}
 		if r.err != nil {
 			fmt.Fprintln(os.Stderr, "[ERROR]", r.host, r.err)
@@ -137,8 +151,10 @@ func displayResults(results []interfaceData, noHead bool) {
 			fmt.Printf("%12d", r.rates["tx-pps"])
 			fmt.Printf("%12d", r.rates["rx-dps"])
 			fmt.Printf("%12d", r.rates["tx-dps"])
-			fmt.Printf("%12d", r.rates["rx-eps"])
-			fmt.Printf("%12d", r.rates["tx-eps"])
+			if extOut {
+				fmt.Printf("%12d", r.rates["rx-eps"])
+				fmt.Printf("%12d", r.rates["tx-eps"])
+			}
 			fmt.Println("")
 		}
 	}
