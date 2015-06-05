@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/eraclitux/goparallel"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
@@ -30,6 +31,9 @@ const (
 	separator     = "ZZZ\n"
 )
 
+// es: map[string]map[string]uint64{"eth0": map[string]uint64{"tx-Bps":12000, "rx-Bps":12000}}
+type rawData map[string]map[string]uint64
+
 // interfaceData models single interface' data for a given host.
 type interfaceData struct {
 	host  string
@@ -38,30 +42,53 @@ type interfaceData struct {
 	err   error
 }
 
-type jobResult struct {
-	host string
-	err  error
-	// es: map[string]map[string]uint64{"eth0": map[string]uint64{"tx-Bps":12000, "rx-Bps":12000}}
-	data map[string]map[string]uint64
-}
-
 type job struct {
 	host            string
 	sshClientConfig ssh.ClientConfig
-	result          chan<- jobResult
+	result          []interfaceData
+	err             error
 }
 
-// unpackJobResult reads data from a jobResult and unpack it into a slice of interfaceData, one for each interface.
-func unpackJobResult(jr *jobResult) []interfaceData {
-	data := []interfaceData{}
-	if jr.err != nil {
-		return []interfaceData{interfaceData{jr.host, "", nil, jr.err}}
+func (j *job) Execute() {
+	var output bytes.Buffer
+	destination := j.host
+	sanitizeHost(&destination)
+	conn, err := ssh.Dial("tcp", destination, &j.sshClientConfig)
+	if err != nil {
+		j.result = packResult(j.host, err, nil)
+		return
 	}
-	for keyInterface, valueMap := range jr.data {
-		i := interfaceData{jr.host, keyInterface, valueMap, nil}
-		data = append(data, i)
+	session, err := conn.NewSession()
+	if err != nil {
+		j.result = packResult(j.host, err, nil)
+		return
 	}
-	return data
+	defer session.Close()
+	session.Stdout = &output
+	if err := session.Run(remoteCommand); err != nil {
+		j.result = packResult(j.host, err, nil)
+		return
+	}
+	debugPrintln("Output:", output.String())
+	data := make(rawData)
+	if err := parseOutput(&output, data); err != nil {
+		j.result = packResult(j.host, err, nil)
+		return
+	}
+	j.result = packResult(j.host, nil, data)
+}
+
+// FIXME docs unpackJobResult reads data from a jobResult and unpack it into a slice of interfaceData, one for each interface.
+func packResult(host string, err error, data rawData) []interfaceData {
+	result := []interfaceData{}
+	if err != nil {
+		return []interfaceData{interfaceData{host, "", nil, err}}
+	}
+	for keyInterface, valueMap := range data {
+		i := interfaceData{host, keyInterface, valueMap, nil}
+		result = append(result, i)
+	}
+	return result
 }
 
 func sanitizeHost(s *string) {
@@ -183,34 +210,6 @@ func parseOutput(out *bytes.Buffer, data map[string]map[string]uint64) error {
 	return nil
 }
 
-func (j *job) getRemoteData() {
-	var output bytes.Buffer
-	destination := j.host
-	sanitizeHost(&destination)
-	conn, err := ssh.Dial("tcp", destination, &j.sshClientConfig)
-	if err != nil {
-		j.result <- jobResult{j.host, err, nil}
-		return
-	}
-	session, err := conn.NewSession()
-	if err != nil {
-		j.result <- jobResult{j.host, err, nil}
-		return
-	}
-	defer session.Close()
-	session.Stdout = &output
-	if err := session.Run(remoteCommand); err != nil {
-		j.result <- jobResult{j.host, err, nil}
-		return
-	}
-	debugPrintln(output.String())
-	data := make(map[string]map[string]uint64)
-	if err := parseOutput(&output, data); err != nil {
-		j.result <- jobResult{j.host, err, nil}
-	}
-	j.result <- jobResult{j.host, nil, data}
-}
-
 func createSSHConfig(user, passwd string) ssh.ClientConfig {
 	sshAuthSock := os.Getenv("SSH_AUTH_SOCK")
 	authMethods := []ssh.AuthMethod{ssh.Password(passwd)}
@@ -233,25 +232,6 @@ func createSSHConfig(user, passwd string) ssh.ClientConfig {
 	}
 }
 
-func populateQueue(jobs chan<- job, results chan<- jobResult, hosts []string, sshConfig ssh.ClientConfig) {
-	for _, host := range hosts {
-		jobs <- job{host, sshConfig, results}
-	}
-	close(jobs)
-}
-
-func evaluateQueue(jobs <-chan job) {
-	for j := range jobs {
-		j.getRemoteData()
-	}
-}
-
-func parallelizeWorkers(jQueue chan job) {
-	for i := 0; i < workers; i++ {
-		go evaluateQueue(jQueue)
-	}
-}
-
 func getHostsFromFile(path string) []string {
 	bytes := []byte{}
 	var err error
@@ -271,10 +251,15 @@ func getHostsFromFile(path string) []string {
 	debugPrintln("Parsed hosts:", hosts)
 	return hosts
 }
+func makeTasks(hosts []string, tasks []goparallel.Tasker, sshConfig ssh.ClientConfig) []goparallel.Tasker {
+	for _, h := range hosts {
+		j := job{host: h, sshClientConfig: sshConfig, result: make([]interfaceData, 2)}
+		tasks = append(tasks, &j)
+	}
+	return tasks
+}
 
 func main() {
-	jobsQueue := make(chan job, workers)
-	resultQueue := make(chan jobResult, workers)
 	hostsFileFlag := flag.String("f", "{filename}", " [FILE] file containing target hosts, one per line, formatted as <hostname>[:port].")
 	userFlag := flag.String("u", "root", "[USERNAME] ssh username.")
 	passwdFlag := flag.String("p", "nopassword", "[PASSWORD] ssh password for remote hosts. Automatically use ssh-agent as fallback.")
@@ -296,29 +281,22 @@ func main() {
 	}
 	hosts := getHostsFromFile(*hostsFileFlag)
 	sshConfig := createSSHConfig(*userFlag, *passwdFlag)
-	resultCounts := 0
+
+	tasks := make([]goparallel.Tasker, 0, len(hosts))
 	interfacesData := make([]interfaceData, 0, len(hosts))
-	runtime.GOMAXPROCS(workers)
-	go populateQueue(jobsQueue, resultQueue, hosts, sshConfig)
-	go parallelizeWorkers(jobsQueue)
-	for {
-		// FIXME make a case for timeout
-		select {
-		case jobResult := <-resultQueue:
-			resultCounts++
-			interfacesData = append(interfacesData, unpackJobResult(&jobResult)...)
-			if resultCounts == len(hosts) {
-				// we could use an arbitrary number of sort keys...
-				orderBy(byKey(sortKeys[0]), byKey(sortKeys[1])).sort(interfacesData)
-				s := []interfaceData{}
-				if *limitFlag == 0 {
-					s = interfacesData
-				} else {
-					s = interfacesData[:*limitFlag]
-				}
-				displayResults(s, *noHeadFlag, *extendedFlag)
-				return
-			}
-		}
+	tasks = makeTasks(hosts, tasks, sshConfig)
+	debugPrintln("num tasks B:", len(tasks))
+	goparallel.RunBlocking(tasks)
+	for _, t := range tasks {
+		interfacesData = append(interfacesData, t.(*job).result...)
 	}
+	// We could use an arbitrary number of sort keys.
+	orderBy(byKey(sortKeys[0]), byKey(sortKeys[1])).sort(interfacesData)
+	s := []interfaceData{}
+	if *limitFlag == 0 {
+		s = interfacesData
+	} else {
+		s = interfacesData[:*limitFlag]
+	}
+	displayResults(s, *noHeadFlag, *extendedFlag)
 }
