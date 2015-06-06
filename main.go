@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/eraclitux/goparallel"
+	"github.com/eraclitux/stracer"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
@@ -69,7 +70,7 @@ func (j *job) Execute() {
 		j.result = packResult(j.host, err, nil)
 		return
 	}
-	debugPrintln("Output:", output.String())
+	stracer.Traceln("Output:", output.String())
 	data := make(rawData)
 	if err := parseOutput(&output, data); err != nil {
 		j.result = packResult(j.host, err, nil)
@@ -176,7 +177,7 @@ func parseOutput(out *bytes.Buffer, data map[string]map[string]uint64) error {
 		// remove white spaces
 		iface := strings.Replace(splittedRow[0], " ", "", -1)
 		countersData := splitOnSpaces(splittedRow[1])
-		debugPrintln("parsed data @ t2:", iface, countersData)
+		stracer.Traceln("parsed data @ t2:", iface, countersData)
 		var err error
 		data[iface], err = makeValueMap(countersData)
 		if err != nil {
@@ -201,7 +202,7 @@ func parseOutput(out *bytes.Buffer, data map[string]map[string]uint64) error {
 		if err != nil {
 			return err
 		}
-		debugPrintln("parsed data @ t1:", iface, countersData)
+		stracer.Traceln("parsed data @ t1:", iface, countersData)
 		calculateRates(data[iface], dataAtT1)
 	}
 	if err := scanner.Err(); err != nil {
@@ -214,7 +215,7 @@ func createSSHConfig(user, passwd string) ssh.ClientConfig {
 	sshAuthSock := os.Getenv("SSH_AUTH_SOCK")
 	authMethods := []ssh.AuthMethod{ssh.Password(passwd)}
 	if sshAuthSock != "" {
-		debugPrintln("ssh-agent socket:", sshAuthSock)
+		stracer.Traceln("ssh-agent socket:", sshAuthSock)
 		socket, err := net.Dial("unix", sshAuthSock)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -223,7 +224,7 @@ func createSSHConfig(user, passwd string) ssh.ClientConfig {
 			authMethod := ssh.PublicKeysCallback(agentClient.Signers)
 			authMethods = append(authMethods, authMethod)
 			// FIXME works even without calling agent.ForwardToAgent()?
-			debugPrintln("ssh-agent configured")
+			stracer.Traceln("ssh-agent configured")
 		}
 	}
 	return ssh.ClientConfig{
@@ -248,7 +249,7 @@ func getHostsFromFile(path string) []string {
 	hosts := strings.Split(string(bytes), "\n")
 	// remove last empty element
 	hosts = hosts[:len(hosts)-1]
-	debugPrintln("Parsed hosts:", hosts)
+	stracer.Traceln("Parsed hosts:", hosts)
 	return hosts
 }
 func makeTasks(hosts []string, tasks []goparallel.Tasker, sshConfig ssh.ClientConfig) []goparallel.Tasker {
@@ -285,7 +286,6 @@ func main() {
 	tasks := make([]goparallel.Tasker, 0, len(hosts))
 	interfacesData := make([]interfaceData, 0, len(hosts))
 	tasks = makeTasks(hosts, tasks, sshConfig)
-	debugPrintln("num tasks B:", len(tasks))
 	goparallel.RunBlocking(tasks)
 	for _, t := range tasks {
 		interfacesData = append(interfacesData, t.(*job).result...)

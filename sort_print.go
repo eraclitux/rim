@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 	"sort"
+
+	"github.com/eraclitux/stracer"
 )
 
 // Type lessFunc is used for sorting interface date with multiple keys.
@@ -91,7 +93,7 @@ func sanitizeSortKeys(keys ...string) ([]string, error) {
 	for _, k := range keys {
 		for _, v := range vKeys {
 			if k == v {
-				debugPrintln("found matching key", v, k)
+				stracer.Traceln("found matching key", v, k)
 				found = true
 			}
 		}
@@ -100,7 +102,7 @@ func sanitizeSortKeys(keys ...string) ([]string, error) {
 		}
 		found = false
 	}
-	debugPrintln("Valid supplied sorting keys", keys)
+	stracer.Traceln("Valid supplied sorting keys:", keys)
 	convertKeys(keys)
 	return keys, nil
 }
