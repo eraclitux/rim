@@ -61,6 +61,16 @@ To print also Errors/s ``-e`` option must be used.
 
 ``-n`` do not show titles. Without ``-p`` ``rim`` will try no password authentication and ``ssh-agent`` as fallback. Default user is root, another one can be used with ``-u`` flag.
 
+Build/Install
+-------------
+
+With a proper Go environment installed just run::
+
+        godep go build
+
+or::
+        godep go install
+
 Changelog
 ---------
 

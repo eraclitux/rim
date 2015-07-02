@@ -3,6 +3,14 @@
 	"GoVersion": "go1.4.2",
 	"Deps": [
 		{
+			"ImportPath": "github.com/eraclitux/goparallel",
+			"Rev": "fc2156521918b62eeafdb2ebbaea6e6e3d2d6b9a"
+		},
+		{
+			"ImportPath": "github.com/eraclitux/stracer",
+			"Rev": "eb32003f6c55049ac3dc2718bffb0d47cfa5939d"
+		},
+		{
 			"ImportPath": "golang.org/x/crypto/ssh",
 			"Rev": "1351f936d976c60a0a48d728281922cf63eafb8d"
 		}
