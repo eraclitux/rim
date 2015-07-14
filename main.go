@@ -4,12 +4,12 @@
 
 // RIM - Remote Interfaces Monitor
 // Agentless network interfaces monitor for Linux firewalls/servers
+// It uses ssh to get data from remote targets.
 package main
 
 import (
 	"bufio"
 	"bytes"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/eraclitux/cfgp"
 	"github.com/eraclitux/goparallel"
 	"github.com/eraclitux/stracer"
 	"golang.org/x/crypto/ssh"
@@ -161,6 +162,7 @@ func calculateRates(dataAtT2, dataAtT1 map[string]uint64) {
 
 // parseOutput arranges RemoteCommand output and calculates rates.
 func parseOutput(out *bytes.Buffer, data map[string]map[string]uint64) error {
+	// FIXME out should be an interface accepted by NewScanner.
 	outBytes := bytes.Split(out.Bytes(), []byte(separator))
 	// Contains interfaces' value at t1
 	outOne := outBytes[0]
@@ -236,7 +238,7 @@ func createSSHConfig(user, passwd string) ssh.ClientConfig {
 func getHostsFromFile(path string) []string {
 	bytes := []byte{}
 	var err error
-	if path == "{filename}" {
+	if path == "" {
 		bytes, err = ioutil.ReadAll(os.Stdin)
 	} else {
 		bytes, err = ioutil.ReadFile(path)
@@ -252,6 +254,7 @@ func getHostsFromFile(path string) []string {
 	stracer.Traceln("Parsed hosts:", hosts)
 	return hosts
 }
+
 func makeTasks(hosts []string, tasks []goparallel.Tasker, sshConfig ssh.ClientConfig) []goparallel.Tasker {
 	for _, h := range hosts {
 		j := job{host: h, sshClientConfig: sshConfig, result: make([]interfaceData, 2)}
@@ -260,28 +263,41 @@ func makeTasks(hosts []string, tasks []goparallel.Tasker, sshConfig ssh.ClientCo
 	return tasks
 }
 
+type configuration struct {
+	HostsFile string `cfgp:"f,[FILE] file containing target hosts. One per line formatted as <hostname>[:port],"`
+	User      string `cfgp:"u,[USERNAME] ssh username,"`
+	Passwd    string `cfgp:"p,[PASSWORD] ssh password for remote hosts. Automatically use ssh-agent as fallback,"`
+	Sort1     string `cfgp:"k1,first sort key,"`
+	Sort2     string `cfgp:"k2,second sort key,"`
+	Limit     int    `cfgp:"l,limit printed results to this number; 0 means no limits,"`
+	NoHead    bool   `cfgp:"n,do not show titles in output,"`
+	Extended  bool   `cfgp:"e,enable extended output,"`
+	Version   bool   `cfgp:"v,show version and exit,"`
+}
+
 func main() {
-	hostsFileFlag := flag.String("f", "{filename}", " [FILE] file containing target hosts, one per line, formatted as <hostname>[:port].")
-	userFlag := flag.String("u", "root", "[USERNAME] ssh username.")
-	passwdFlag := flag.String("p", "nopassword", "[PASSWORD] ssh password for remote hosts. Automatically use ssh-agent as fallback.")
-	sortFlag1 := flag.String("k1", "rx-dps", "first sort key.")
-	sortFlag2 := flag.String("k2", "rx-Kbps", "second sort key.")
-	limitFlag := flag.Int("l", 0, "limit printed results to this number, 0 means no limits.")
-	noHeadFlag := flag.Bool("n", false, "do not show titles in output.")
-	extendedFlag := flag.Bool("e", false, "enable extended output.")
-	versionFlag := flag.Bool("v", false, "show version and exit.")
-	flag.Parse()
-	if *versionFlag {
-		fmt.Println("RIM - Remote Interfaces Monitor v2.0.0-alfa")
+	// Set default configuration.
+	conf := configuration{
+		User:   "root",
+		Passwd: "nopassword",
+		Sort1:  "rx-dps",
+		Sort2:  "rx-Kbps",
+	}
+	cfgp.Path = os.Getenv("RIM_CONF_FILE")
+	stracer.Traceln("conf file path:", os.Getenv("RIM_CONF_FILE"))
+	cfgp.Parse(&conf)
+
+	if conf.Version {
+		fmt.Println("RIM - Remote Interfaces Monitor v2.1.0-beta")
 		return
 	}
-	sortKeys, err := sanitizeSortKeys(*sortFlag1, *sortFlag2)
+	sortKeys, err := sanitizeSortKeys(conf.Sort1, conf.Sort2)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
-	hosts := getHostsFromFile(*hostsFileFlag)
-	sshConfig := createSSHConfig(*userFlag, *passwdFlag)
+	hosts := getHostsFromFile(conf.HostsFile)
+	sshConfig := createSSHConfig(conf.User, conf.Passwd)
 
 	tasks := make([]goparallel.Tasker, 0, len(hosts))
 	interfacesData := make([]interfaceData, 0, len(hosts))
@@ -293,10 +309,10 @@ func main() {
 	// We could use an arbitrary number of sort keys.
 	orderBy(byKey(sortKeys[0]), byKey(sortKeys[1])).sort(interfacesData)
 	s := []interfaceData{}
-	if *limitFlag == 0 {
+	if conf.Limit == 0 {
 		s = interfacesData
 	} else {
-		s = interfacesData[:*limitFlag]
+		s = interfacesData[:conf.Limit]
 	}
-	displayResults(s, *noHeadFlag, *extendedFlag)
+	displayResults(s, conf.NoHead, conf.Extended)
 }

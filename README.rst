@@ -8,6 +8,8 @@ On a multicore machine can concurrently handle hundreds of servers per time, fas
 
 It reads information exposed through ``/proc`` file system using ssh connections so no remote agents are needed on targets. Even *linux bridges* are included in report.
 
+Find incoming and outgoing **DDoS** in your network in a snap, even before NetFlow probes!
+
 .. contents::
 
 Usage examples
@@ -33,7 +35,7 @@ Interfaces most active receiving by Kb/s::
 
         rim -f ~/data/target_hosts.txt -k1 rx-Kbps
 
-Interfaces most active transmitting by Packets/s, the first ten::
+Interfaces most active transmitting by Packets/s, the first ten (useful to spot out going DDoS)::
 
         rim -f ~/data/target_hosts.txt -k1 tx-pps -l 10
 
@@ -61,6 +63,19 @@ To print also Errors/s ``-e`` option must be used.
 
 ``-n`` do not show titles. Without ``-p`` ``rim`` will try no password authentication and ``ssh-agent`` as fallback. Default user is root, another one can be used with ``-u`` flag.
 
+Configuration
+-------------
+
+A configuration file can be used to specify configuration parameters. File must be end with ``.cfg``. Use env var ``RIM_CONF_FILE`` to specify its path. You could put::
+
+        export RIM_CONF_FILE=/path/to/conf.cfg
+
+in your ``.bashrc``.
+
+Available parameters can be showed with ``rim -h``, lowercase first letter when use them in file. For example to specify ``HostsFile``::
+
+        hostsFile = /path/to/file
+
 Build/Install
 -------------
 
@@ -68,11 +83,13 @@ With a proper Go environment installed just run::
 
         godep go build
 
-or::
+To install in ``$GOPATH/bin``::
+
         godep go install
 
 Changelog
 ---------
 
+- v2.1.0: configuration file capabilities.
 - v2.0.0: it adds sort capabilities, no more need to pipe the output to ``sort``. It breaks APIs (output changed).
 - v1.0.0: initial relase, retrieve info from remote hosts via ssh.
