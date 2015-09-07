@@ -35,8 +35,8 @@ func getFieldByTagName(structValue reflect.Value, name string) reflect.Value {
 	structType := structValue.Type()
 	for i := 0; i < structValue.NumField(); i++ {
 		if n, ok := nameFromTags(structType.Field(i)); ok {
-			stracer.Traceln("found a key by tag", n, name)
 			if n == name {
+				stracer.Traceln("found a key by tag", n, name)
 				field = structValue.Field(i)
 			}
 		}

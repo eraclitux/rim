@@ -8,14 +8,19 @@
 // This paradigm is particulary uselfull in presence of heavy,
 // indipended tasks.
 //
-// Usefull for debugging on Linux: pidstat -tu  -C '<pid-name>'  1
+// Go's high level functionalities are used to implement parallelism
+// with concurrency (channel, no locks).
 package goparallel
+
+// NOTE Usefull for debugging on Linux: pidstat -tu  -C '<pid-name>'  1
 
 import (
 	"errors"
 	"os"
 	"os/signal"
 	"runtime"
+
+	"github.com/eraclitux/stracer"
 )
 
 // Tasker interface models an heavy task that have to be
@@ -31,7 +36,7 @@ var workersNumber = runtime.NumCPU()
 var jobsQueue chan Tasker
 var doneChan chan struct{}
 
-func populateQueue(jobsQueue chan<- Tasker, prematureEnd chan<- struct{}, jobs []Tasker) {
+func populateQueue(jobsQueue chan<- Tasker, jobs []Tasker, prematureEnd chan<- struct{}) {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
 	for _, t := range jobs {
@@ -40,6 +45,7 @@ func populateQueue(jobsQueue chan<- Tasker, prematureEnd chan<- struct{}, jobs [
 			// Abort jobs queue evaluation.
 			// Taskers already sended will be finished
 			// and an error will be returned.
+			stracer.Traceln("goparallel: received SIGINT")
 			prematureEnd <- struct{}{}
 			close(jobsQueue)
 			return
@@ -47,6 +53,7 @@ func populateQueue(jobsQueue chan<- Tasker, prematureEnd chan<- struct{}, jobs [
 			jobsQueue <- t
 		}
 	}
+	stracer.Traceln("close jobsQueue")
 	close(jobsQueue)
 }
 
@@ -83,7 +90,7 @@ func RunBlocking(jobs []Tasker) (err error) {
 	jobsQueue := make(chan Tasker, workersNumber)
 	doneChan := make(chan struct{}, workersNumber)
 	var totalDone int
-	go populateQueue(jobsQueue, prematureEnd, jobs)
+	go populateQueue(jobsQueue, jobs, prematureEnd)
 	go parallelizeWorkers(jobsQueue, doneChan)
 	for {
 		select {

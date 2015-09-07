@@ -40,7 +40,7 @@ func TestMakeHelpMessage(t *testing.T) {
 	structType := structValue.Type()
 	if f, ok := structType.FieldByName("Surname"); ok {
 		m := makeHelpMessage(f)
-		if m != "specify the surname, a string value" {
+		if m != "specify the surname, a string" {
 			t.Fatal("unexpected help message:", m)
 		}
 	} else {

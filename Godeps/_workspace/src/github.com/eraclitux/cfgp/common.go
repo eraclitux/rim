@@ -20,15 +20,10 @@
 //
 // Simplest configuration file
 //
-// cfgp.Path variable can set to path where file is located.
-// For default it is initialized to the value of evirontment variable
+// cfgp.Path variable can be set to the path of a configuration file.
+// For default it is initialized to the value of evirontment variable:
 //
 //	CFGP_FILE_PATH
-//
-// but could be changed to any other value.
-//
-// To configuration file to be parsed a "File" struct field must be defined
-// and initialized with path to file.
 //
 // Files ending with:
 // 	ini|txt|cfg
@@ -36,10 +31,12 @@
 //
 //	https://en.wikipedia.org/wiki/INI_file
 //
-// First letter of every key found upper cased and than is searched
-// for a struct field with same name:
+// First letter of every key found is upper cased and than,
+// a struct field with same name is searched:
+//
 // 	user -> User
 //	portNumber -> PortNumber
+//
 // If such field name is not found than comparisson is made against
 // key specified as first element in tag.
 //
@@ -65,9 +62,9 @@ var ErrNeedPointer = errors.New("cfgp: pointer to struct expected")
 var ErrFileFormat = errors.New("cfgp: unrecognized file format, only (ini|txt|cfg) supported")
 var ErrUnknownFlagType = errors.New("cfgp: unknown flag type")
 
-// Path is the path to configuration file that
-// Parse will try to ,
-// This could be left to its default value if no configuration
+// Path is the path to configuration file.
+// For default is populated with env var CFGP_FILE_PATH.
+// This could be left empty if no configuration
 // file is needed.
 var Path string
 
@@ -87,8 +84,10 @@ type myFlag struct {
 	isBool     bool
 }
 
+// String () is used to print default value by PrintDefaults().
 func (s *myFlag) String() string {
-	return s.field.Name
+	// FIXME deal with non string types.
+	return s.fieldValue.String()
 }
 
 // IsBoolFlag istructs the command-line parser
@@ -154,27 +153,27 @@ func makeHelpMessage(f reflect.StructField) string {
 	switch f.Type.Kind() {
 	case reflect.Int:
 		if m, ok := helpMessageFromTags(f); ok {
-			helpM = m + ", an int value"
+			helpM = m + ", an int"
 		} else {
-			helpM = "set an int value"
+			helpM = "set an int"
 		}
 	case reflect.String:
 		if m, ok := helpMessageFromTags(f); ok {
-			helpM = m + ", a string value"
+			helpM = m + ", a string"
 		} else {
-			helpM = "set a string value"
+			helpM = "set a string"
 		}
 	case reflect.Bool:
 		if m, ok := helpMessageFromTags(f); ok {
-			helpM = m + ", a bool value"
+			helpM = m + ", a bool"
 		} else {
-			helpM = "set a bool value"
+			helpM = "set a bool"
 		}
 	case reflect.Float64:
 		if m, ok := helpMessageFromTags(f); ok {
-			helpM = m + ", a float64 value"
+			helpM = m + ", a float64"
 		} else {
-			helpM = "set a float64 value"
+			helpM = "set a float64"
 		}
 	default:
 		helpM = "unknown flag kind"
@@ -192,7 +191,9 @@ func isBool(v reflect.Value) bool {
 func nameFromTags(f reflect.StructField) (string, bool) {
 	t := f.Tag.Get("cfgp")
 	tags := strings.Split(t, ",")
-	if len(tags) == 3 {
+	// if name position is empty return false es:
+	// `cfgp:",help message,"`
+	if len(tags) == 3 && tags[0] != "" {
 		return tags[0], true
 	}
 	return "", false
@@ -208,8 +209,21 @@ func createFlag(f reflect.StructField, fieldValue reflect.Value, fs *flag.FlagSe
 	fs.Var(&myFlag{f, fieldValue, isBool(fieldValue)}, name, makeHelpMessage(f))
 }
 
+// hasTestFlag helps to identify if a test
+// is running with flags that can make
+// flagSet.Parse() fail.
+func hasTestFlag([]string) bool {
+	for _, f := range os.Args[1:] {
+		if f == `-test.v=true` {
+			stracer.Traceln("test flag found")
+			return true
+		}
+	}
+	return false
+}
+
 // parseFlags parses struct fields, creates command line arguments
-// and check if they are specified.
+// and check if they are passed as arguments.
 func parseFlags(s reflect.Value) error {
 	flagSet := flag.NewFlagSet("cfgp", flag.ExitOnError)
 	flagSet.Usage = func() {
@@ -223,9 +237,12 @@ func parseFlags(s reflect.Value) error {
 			createFlag(typeOfT.Field(i), fieldValue, flagSet)
 		}
 	}
-	err := flagSet.Parse(os.Args[1:])
+	args := os.Args[1:]
+	if hasTestFlag(os.Args[1:]) {
+		args = []string{}
+	}
+	err := flagSet.Parse(args)
 	if err != nil {
-		stracer.Traceln("this is not executed")
 		return err
 	}
 	return nil
@@ -262,5 +279,5 @@ func Parse(confPtr interface{}) error {
 
 func init() {
 	Path = os.Getenv("CFGP_FILE_PATH")
-	stracer.Traceln("file path from:", Path)
+	stracer.Traceln("init file path:", Path)
 }

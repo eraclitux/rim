@@ -1,15 +1,16 @@
 {
 	"ImportPath": "github.com/eraclitux/rim",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.5",
 	"Deps": [
 		{
 			"ImportPath": "github.com/eraclitux/cfgp",
-			"Comment": "new-api-8-gb620a1c",
-			"Rev": "b620a1c42f94441ca14144f9b8bc4ebb21d9f95a"
+			"Comment": "v1.0.0-alpha-2-g3d4bec5",
+			"Rev": "3d4bec502cbba30395d1ebfd3eb75902552bbede"
 		},
 		{
 			"ImportPath": "github.com/eraclitux/goparallel",
-			"Rev": "fc2156521918b62eeafdb2ebbaea6e6e3d2d6b9a"
+			"Comment": "v0.1.0-alpha",
+			"Rev": "92321ff69ca8311f0ced647903f28bb595a9de78"
 		},
 		{
 			"ImportPath": "github.com/eraclitux/stracer",

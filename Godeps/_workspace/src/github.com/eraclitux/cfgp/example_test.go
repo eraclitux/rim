@@ -10,16 +10,18 @@ import (
 type myConf struct {
 	Address string
 	Port    string
-	// A command line argument "users", which expects an int value,
+	// A command line flag "-users", which expects an int value,
 	// will be created.
 	// Same key name will be searched in configuration file.
 	NumberOfUsers int `cfgp:"users,number of users,"`
 	Daemon        bool
+	Message       string
 }
 
 func Example() {
-	c := myConf{}
-	//
+	// To create a dafault value for a flag
+	// assign it when instantiate the conf struct.
+	c := myConf{Message: "A default value"}
 	cfgp.Path = "test_data/one.ini"
 	err := cfgp.Parse(&c)
 	if err != nil {
