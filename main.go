@@ -28,6 +28,9 @@ import (
 
 var workers = runtime.NumCPU()
 
+var Version = "unknown-build"
+var BuildTime = "unknown-time"
+
 const (
 	remoteCommand = `cat /proc/net/dev; echo ZZZ; sleep 1; cat /proc/net/dev;`
 	separator     = "ZZZ\n"
@@ -288,7 +291,7 @@ func main() {
 	cfgp.Parse(&conf)
 
 	if conf.Version {
-		fmt.Println("RIM - Remote Interfaces Monitor v2.1.0-beta")
+		fmt.Println("RIM - Remote Interfaces Monitor", Version, BuildTime)
 		return
 	}
 	sortKeys, err := sanitizeSortKeys(conf.Sort1, conf.Sort2)
