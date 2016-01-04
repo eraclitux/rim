@@ -8,6 +8,8 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
@@ -98,8 +100,12 @@ func calculateRates(dataAtT2, dataAtT1 map[string]uint64) {
 // parseOutput arranges remoteCommand output executed
 // on a single remote host and calculates rates
 // for all network interfaces.
-func parseOutput(out *bytes.Buffer, data rawData) error {
-	outBytes := bytes.Split(out.Bytes(), []byte(separator))
+func parseOutput(out io.Reader, data rawData) error {
+	all, err := ioutil.ReadAll(out)
+	if err != nil {
+		return err
+	}
+	outBytes := bytes.Split(all, []byte(separator))
 	// Contains interfaces' value at t1
 	outOne := outBytes[0]
 	// Contains interfaces' value at t2

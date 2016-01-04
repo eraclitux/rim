@@ -48,7 +48,7 @@ type job struct {
 }
 
 func (j *job) Execute() {
-	var output bytes.Buffer
+	output := new(bytes.Buffer)
 	destination := j.host
 	sanitizeHost(&destination)
 	conn, err := ssh.Dial("tcp", destination, &j.sshClientConfig)
@@ -62,14 +62,14 @@ func (j *job) Execute() {
 		return
 	}
 	defer session.Close()
-	session.Stdout = &output
+	session.Stdout = output
 	if err := session.Run(remoteCommand); err != nil {
 		j.result = packResult(j.host, err, nil)
 		return
 	}
 	stracer.Traceln("Output:", output.String())
 	data := make(rawData)
-	if err := parseOutput(&output, data); err != nil {
+	if err := parseOutput(output, data); err != nil {
 		j.result = packResult(j.host, err, nil)
 		return
 	}
