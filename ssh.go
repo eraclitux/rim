@@ -28,7 +28,7 @@ const (
 // es: map[string]map[string]uint64{"eth0": map[string]uint64{"tx-Bps":12000, "rx-Bps":12000}}
 type rawData map[string]map[string]uint64
 
-// interfaceData models single interface' data for a given host.
+// interfaceData models single interface's data for a given host.
 type interfaceData struct {
 	host  string
 	name  string
@@ -36,8 +36,9 @@ type interfaceData struct {
 	err   error
 }
 
-// makeValueMap creates for a given interface
-// and populates map with paculiar values at t2 or t1 values.
+// makeValueMap creates a map for a given interface
+// and populates it with peculiar values (rx-Bps, rx-pps etc)
+// at t2 or t1 instants.
 func makeValueMap(data []string) (map[string]uint64, error) {
 	dataMap := make(map[string]uint64)
 	for i, s := range data {
@@ -83,17 +84,21 @@ func makeValueMap(data []string) (map[string]uint64, error) {
 	return dataMap, nil
 }
 
-// calculateRates uses t2 values stored in dataAtT2 by makeValueMap to calculate rates.
+// calculateRates uses values at instant t2 stored in dataAtT2
+// by makeValueMap to calculate rates for a single interface.
+// Calculated rates are than stored in dataAtT2.
 func calculateRates(dataAtT2, dataAtT1 map[string]uint64) {
 	for k, v := range dataAtT2 {
-		// assuming that ΔT is always 1 second (sleep 1)
+		// assuming that ΔT is always 1 second
+		// (we use sleep 1 at remote host)
 		dataAtT2[k] = v - dataAtT1[k]
 	}
 }
 
-// parseOutput arranges RemoteCommand output and calculates rates.
+// parseOutput arranges remoteCommand output executed
+// on a single remote host and calculates rates
+// for all network interfaces.
 func parseOutput(out *bytes.Buffer, data rawData) error {
-	// FIXME out should be an interface accepted by NewScanner.
 	outBytes := bytes.Split(out.Bytes(), []byte(separator))
 	// Contains interfaces' value at t1
 	outOne := outBytes[0]
@@ -136,6 +141,7 @@ func parseOutput(out *bytes.Buffer, data rawData) error {
 			return err
 		}
 		stracer.Traceln("parsed data @ t1:", iface, countersData)
+		// rates are stored in passed data map
 		calculateRates(data[iface], dataAtT1)
 	}
 	if err := scanner.Err(); err != nil {
@@ -151,12 +157,12 @@ func createSSHConfig(user, passwd string) ssh.ClientConfig {
 		stracer.Traceln("ssh-agent socket:", sshAuthSock)
 		socket, err := net.Dial("unix", sshAuthSock)
 		if err != nil {
+			// FIXME return error
 			fmt.Fprintln(os.Stderr, err)
 		} else {
 			agentClient := agent.NewClient(socket)
 			authMethod := ssh.PublicKeysCallback(agentClient.Signers)
 			authMethods = append(authMethods, authMethod)
-			// FIXME works even without calling agent.ForwardToAgent()?
 			stracer.Traceln("ssh-agent configured")
 		}
 	}

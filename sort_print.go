@@ -73,7 +73,7 @@ func (ms *multiSorter) Less(i, j int) bool {
 	return ms.lessFunctions[k](p, q)
 }
 
-// convertKeys convert user suplied sort keys to be used in interfaceData.rates.
+// convertKeys converts user suplied sort keys to be used in interfaceData.rates.
 func convertKeys(keys []string) {
 	for i, v := range keys {
 		switch v {

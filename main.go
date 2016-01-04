@@ -9,6 +9,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -75,8 +76,8 @@ func (j *job) Execute() {
 	j.result = packResult(j.host, nil, data)
 }
 
-// packResult gets data from a jobResult and unpack it into
-// a slice of interfaceData, one for each interface.
+// packResult gets data from an executed job and puts them into
+// a slice of interfaceData, one for each network interface.
 func packResult(host string, err error, data rawData) []interfaceData {
 	result := []interfaceData{}
 	if err != nil {
@@ -101,7 +102,7 @@ func splitOnSpaces(s string) []string {
 	return regexp.MustCompile(`\s+`).Split(trimmedS, -1)
 }
 
-func getHostsFromFile(path string) []string {
+func getHostsFromFile(path string) ([]string, error) {
 	bytes := []byte{}
 	var err error
 	if path == "" {
@@ -110,15 +111,16 @@ func getHostsFromFile(path string) []string {
 		bytes, err = ioutil.ReadFile(path)
 	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error reading input", err)
-		// FIXME just return an error and move this inside main
-		os.Exit(2)
+		return nil, err
 	}
 	hosts := strings.Split(string(bytes), "\n")
 	// remove last empty element
 	hosts = hosts[:len(hosts)-1]
+	if len(hosts) == 0 {
+		return nil, errors.New("zero hosts")
+	}
 	stracer.Traceln("Parsed hosts:", hosts)
-	return hosts
+	return hosts, nil
 }
 
 func makeTasks(hosts []string, tasks []goparallel.Tasker, sshConfig ssh.ClientConfig) []goparallel.Tasker {
@@ -130,7 +132,7 @@ func makeTasks(hosts []string, tasks []goparallel.Tasker, sshConfig ssh.ClientCo
 }
 
 func main() {
-	// Set default configuration.
+	// Set default values.
 	conf := configuration{
 		User:   "root",
 		Passwd: "nopassword",
@@ -150,7 +152,11 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
-	hosts := getHostsFromFile(conf.HostsFile)
+	hosts, err := getHostsFromFile(conf.HostsFile)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error getting hosts:", err)
+		os.Exit(2)
+	}
 	sshConfig := createSSHConfig(conf.User, conf.Passwd)
 
 	tasks := make([]goparallel.Tasker, 0, len(hosts))
