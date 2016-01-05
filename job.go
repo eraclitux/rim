@@ -59,7 +59,8 @@ func packResult(host string, err error, data rawData) []interfaceData {
 	return result
 }
 
-func makeTasks(hosts []string, tasks []goparallel.Tasker, sshConfig ssh.ClientConfig) []goparallel.Tasker {
+func makeTasks(hosts []string, sshConfig ssh.ClientConfig) []goparallel.Tasker {
+	tasks := make([]goparallel.Tasker, 0, len(hosts))
 	for _, h := range hosts {
 		// FIXME are 2 elements allocated in result really used
 		// or result is just overwritten? In this case use 0 lenght

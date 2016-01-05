@@ -13,15 +13,12 @@ import (
 	"io/ioutil"
 	"os"
 	"regexp"
-	"runtime"
 	"strings"
 
 	"github.com/eraclitux/cfgp"
 	"github.com/eraclitux/goparallel"
 	"github.com/eraclitux/stracer"
 )
-
-var workers = runtime.NumCPU()
 
 var Version = "unknown-build"
 var BuildTime = "unknown-time"
@@ -98,10 +95,8 @@ func main() {
 		os.Exit(2)
 	}
 	sshConfig := createSSHConfig(conf.User, conf.Passwd)
-
-	tasks := make([]goparallel.Tasker, 0, len(hosts))
 	interfacesData := make([]interfaceData, 0, len(hosts))
-	tasks = makeTasks(hosts, tasks, sshConfig)
+	tasks := makeTasks(hosts, sshConfig)
 	goparallel.RunBlocking(tasks)
 	for _, t := range tasks {
 		interfacesData = append(interfacesData, t.(*job).result...)
