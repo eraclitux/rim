@@ -19,6 +19,9 @@ type lessFunc func(e1, e2 *interfaceData) bool
 // k arguments can be any key declared in makeValueMap.
 func byKey(k string) lessFunc {
 	return func(e1, e2 *interfaceData) bool {
+		if e1.err != nil {
+			return true
+		}
 		// reverse order
 		return e1.rates[k] > e2.rates[k]
 	}
@@ -68,8 +71,6 @@ func (ms *multiSorter) Less(i, j int) bool {
 		// here if p == q, lets try next lessFunc
 	}
 	// returns result of last lessFunc
-	// FIXME this should be always false so can it be avoided?
-	//return false
 	return ms.lessFunctions[k](p, q)
 }
 

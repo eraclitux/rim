@@ -180,7 +180,7 @@ func createSSHConfig(user, passwd string) ssh.ClientConfig {
 	}
 }
 
-// assembleSSHClient helps to creat an ssh client
+// assembleSSHClient helps to create an ssh client
 // with a configurable timeout connection.
 func assembleSSHClient(network, addr string, config *ssh.ClientConfig, timeout int) (*ssh.Client, error) {
 	cNet, err := net.DialTimeout(network, addr, time.Duration(timeout)*time.Second)
