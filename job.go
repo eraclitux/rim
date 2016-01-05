@@ -12,6 +12,7 @@ type job struct {
 	host            string
 	sshClientConfig ssh.ClientConfig
 	result          []interfaceData
+	timeout         int
 	err             error
 }
 
@@ -19,7 +20,9 @@ func (j *job) Execute() {
 	output := new(bytes.Buffer)
 	destination := j.host
 	sanitizeHost(&destination)
-	conn, err := ssh.Dial("tcp", destination, &j.sshClientConfig)
+
+	conn, err := assembleSSHClient("tcp", destination, &j.sshClientConfig, j.timeout)
+
 	if err != nil {
 		j.result = packResult(j.host, err, nil)
 		return
@@ -59,12 +62,17 @@ func packResult(host string, err error, data rawData) []interfaceData {
 	return result
 }
 
-func makeTasks(hosts []string, sshConfig ssh.ClientConfig) []goparallel.Tasker {
+func makeTasks(hosts []string, sshConfig ssh.ClientConfig, timeout int) []goparallel.Tasker {
 	tasks := make([]goparallel.Tasker, 0, len(hosts))
 	for _, h := range hosts {
 		// FIXME are 2 elements allocated in result really used
 		// or result is just overwritten? In this case use 0 lenght
-		j := job{host: h, sshClientConfig: sshConfig, result: make([]interfaceData, 2)}
+		j := job{
+			host:            h,
+			sshClientConfig: sshConfig,
+			result:          make([]interfaceData, 2),
+			timeout:         timeout,
+		}
 		tasks = append(tasks, &j)
 	}
 	return tasks

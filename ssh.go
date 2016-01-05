@@ -14,6 +14,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/eraclitux/stracer"
 	"golang.org/x/crypto/ssh"
@@ -177,4 +178,19 @@ func createSSHConfig(user, passwd string) ssh.ClientConfig {
 		User: user,
 		Auth: authMethods,
 	}
+}
+
+// assembleSSHClient helps to creat an ssh client
+// with a configurable timeout connection.
+func assembleSSHClient(network, addr string, config *ssh.ClientConfig, timeout int) (*ssh.Client, error) {
+	cNet, err := net.DialTimeout(network, addr, time.Duration(timeout)*time.Second)
+	if err != nil {
+		return nil, err
+	}
+	conn, newChan, reqChan, err := ssh.NewClientConn(cNet, addr, config)
+	if err != nil {
+		return nil, err
+	}
+	return ssh.NewClient(conn, newChan, reqChan),
+		nil
 }

@@ -30,6 +30,7 @@ type configuration struct {
 	Sort1     string `cfgp:"k1,first sort key,"`
 	Sort2     string `cfgp:"k2,second sort key,"`
 	Limit     int    `cfgp:"l,limit printed results to this number; 0 means no limits,"`
+	Timeout   int    `cfgp:"t,timeout is seconds after connection to host is considered unavailable,"`
 	NoHead    bool   `cfgp:"n,do not show titles in output,"`
 	Extended  bool   `cfgp:"e,enable extended output,"`
 	Version   bool   `cfgp:"v,show version and exit,"`
@@ -71,10 +72,11 @@ func getHostsFromFile(path string) ([]string, error) {
 func main() {
 	// Set default values.
 	conf := configuration{
-		User:   "root",
-		Passwd: "nopassword",
-		Sort1:  "rx-dps",
-		Sort2:  "rx-Kbps",
+		User:    "root",
+		Passwd:  "nopassword",
+		Sort1:   "rx-dps",
+		Sort2:   "rx-Kbps",
+		Timeout: 30,
 	}
 	cfgp.Path = os.Getenv("RIM_CONF_FILE")
 	stracer.Traceln("conf file path:", os.Getenv("RIM_CONF_FILE"))
@@ -96,7 +98,7 @@ func main() {
 	}
 	sshConfig := createSSHConfig(conf.User, conf.Passwd)
 	interfacesData := make([]interfaceData, 0, len(hosts))
-	tasks := makeTasks(hosts, sshConfig)
+	tasks := makeTasks(hosts, sshConfig, conf.Timeout)
 	goparallel.RunBlocking(tasks)
 	for _, t := range tasks {
 		interfacesData = append(interfacesData, t.(*job).result...)
