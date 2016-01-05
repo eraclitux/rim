@@ -4,11 +4,10 @@
 
 // RIM - Remote Interfaces Monitor
 // Agentless network interfaces monitor for Linux firewalls/servers
-// It uses ssh to get data from remote targets.
+// It uses ssh to get data from remote hosts.
 package main
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -20,7 +19,6 @@ import (
 	"github.com/eraclitux/cfgp"
 	"github.com/eraclitux/goparallel"
 	"github.com/eraclitux/stracer"
-	"golang.org/x/crypto/ssh"
 )
 
 var workers = runtime.NumCPU()
@@ -38,56 +36,6 @@ type configuration struct {
 	NoHead    bool   `cfgp:"n,do not show titles in output,"`
 	Extended  bool   `cfgp:"e,enable extended output,"`
 	Version   bool   `cfgp:"v,show version and exit,"`
-}
-
-type job struct {
-	host            string
-	sshClientConfig ssh.ClientConfig
-	result          []interfaceData
-	err             error
-}
-
-func (j *job) Execute() {
-	output := new(bytes.Buffer)
-	destination := j.host
-	sanitizeHost(&destination)
-	conn, err := ssh.Dial("tcp", destination, &j.sshClientConfig)
-	if err != nil {
-		j.result = packResult(j.host, err, nil)
-		return
-	}
-	session, err := conn.NewSession()
-	if err != nil {
-		j.result = packResult(j.host, err, nil)
-		return
-	}
-	defer session.Close()
-	session.Stdout = output
-	if err := session.Run(remoteCommand); err != nil {
-		j.result = packResult(j.host, err, nil)
-		return
-	}
-	stracer.Traceln("Output:", output.String())
-	data := make(rawData)
-	if err := parseOutput(output, data); err != nil {
-		j.result = packResult(j.host, err, nil)
-		return
-	}
-	j.result = packResult(j.host, nil, data)
-}
-
-// packResult gets data from an executed job and puts them into
-// a slice of interfaceData, one for each network interface.
-func packResult(host string, err error, data rawData) []interfaceData {
-	result := []interfaceData{}
-	if err != nil {
-		return []interfaceData{interfaceData{host, "", nil, err}}
-	}
-	for keyInterface, valueMap := range data {
-		i := interfaceData{host, keyInterface, valueMap, nil}
-		result = append(result, i)
-	}
-	return result
 }
 
 func sanitizeHost(s *string) {
@@ -121,14 +69,6 @@ func getHostsFromFile(path string) ([]string, error) {
 	}
 	stracer.Traceln("Parsed hosts:", hosts)
 	return hosts, nil
-}
-
-func makeTasks(hosts []string, tasks []goparallel.Tasker, sshConfig ssh.ClientConfig) []goparallel.Tasker {
-	for _, h := range hosts {
-		j := job{host: h, sshClientConfig: sshConfig, result: make([]interfaceData, 2)}
-		tasks = append(tasks, &j)
-	}
-	return tasks
 }
 
 func main() {
