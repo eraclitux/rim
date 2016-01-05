@@ -99,7 +99,8 @@ func calculateRates(dataAtT2, dataAtT1 map[string]uint64) {
 
 // parseOutput arranges remoteCommand output executed
 // on a single remote host and calculates rates
-// for all network interfaces.
+// for all its network interfaces.
+// It stores results in passed data var.
 func parseOutput(out io.Reader, data rawData) error {
 	all, err := ioutil.ReadAll(out)
 	if err != nil {
