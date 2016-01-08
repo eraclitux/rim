@@ -43,7 +43,7 @@ func sanitizeHost(s *string) {
 }
 
 func splitOnSpaces(s string) []string {
-	// Remove leading a trailing white spaces that gives wrong results with regexp below
+	// Remove leading and trailing white spaces that gives wrong results with regexp below
 	trimmedS := strings.Trim(s, " ")
 	return regexp.MustCompile(`\s+`).Split(trimmedS, -1)
 }
@@ -99,7 +99,9 @@ func main() {
 	sshConfig := createSSHConfig(conf.User, conf.Passwd)
 	interfacesData := make([]interfaceData, 0, len(hosts))
 	tasks := makeTasks(hosts, sshConfig, conf.Timeout)
+	doneChan := showSpinner()
 	goparallel.RunBlocking(tasks)
+	doneChan <- struct{}{}
 	for _, t := range tasks {
 		interfacesData = append(interfacesData, t.(*job).result...)
 	}

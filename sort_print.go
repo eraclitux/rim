@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"time"
 
 	"github.com/eraclitux/stracer"
 )
@@ -142,6 +143,10 @@ func printHead(extOut bool) {
 
 func displayResults(results []interfaceData, noHead bool, extOut bool) {
 	for i, r := range results {
+		// Clean last spinner char.
+		// We have to call this in displayResults
+		// which is executed before of this.
+		fmt.Fprintf(os.Stderr, "\r%s", "")
 		if i%20 == 0 && !noHead {
 			printHead(extOut)
 		}
@@ -163,4 +168,25 @@ func displayResults(results []interfaceData, noHead bool, extOut bool) {
 			fmt.Println("")
 		}
 	}
+}
+
+func showSpinner() chan<- struct{} {
+	doneC := make(chan struct{})
+	tick := time.Tick(100 * time.Millisecond)
+	go func() {
+		for {
+			for _, r := range `-\|/` {
+				select {
+				case <-doneC:
+					// We have to call this in displayResults
+					// which may be (and usually is) executed before of this.
+					//fmt.Fprintf(os.Stderr, "\r%s", "")
+					return
+				case <-tick:
+					fmt.Fprintf(os.Stderr, "\r%c", r)
+				}
+			}
+		}
+	}()
+	return doneC
 }

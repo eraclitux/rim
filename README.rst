@@ -90,6 +90,7 @@ To install in ``$GOPATH/bin``::
 Changelog
 ---------
 
+- v2.2.0-beta: show a spinner.
 - v2.1.0-beta: add connection timeout parameter.
 - v2.0.0-beta: configuration file capabilities.
 - v2.0.0-alpha: it adds sort capabilities, no more need to pipe the output to ``sort``. It breaks APIs (output changed).

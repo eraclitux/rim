@@ -26,12 +26,14 @@ const (
 	separator     = "ZZZ\n"
 )
 
-// rawData stores all parameters for a single interface
-// at a given time.
+// rawData stores all rates (received packets per second,
+// transmitted bytes per secont etc.)
+// for all network interfaces for a single host.
 // es: map[string]map[string]uint64{"eth0": map[string]uint64{"tx-Bps":12000, "rx-Bps":12000}}
 type rawData map[string]map[string]uint64
 
-// interfaceData models single interface's data for a given host.
+// interfaceData models single network interface's data
+// for a given host.
 type interfaceData struct {
 	host  string
 	name  string
@@ -39,9 +41,11 @@ type interfaceData struct {
 	err   error
 }
 
-// makeValueMap creates a map for a given interface
-// and populates it with peculiar values (rx-Bps, rx-pps etc)
-// at t2 or t1 instants.
+// makeValueMap creates a map for a given network interface
+// and populates it with peculiar values (total received bytes,
+// total received pacckets etc) at t2 or t1 instants.
+// After t1 and t2 have been captured rates will be
+// calculated and stored in this map.
 func makeValueMap(data []string) (map[string]uint64, error) {
 	dataMap := make(map[string]uint64)
 	for i, s := range data {
