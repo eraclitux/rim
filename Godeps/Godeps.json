@@ -1,26 +1,28 @@
 {
 	"ImportPath": "github.com/eraclitux/rim",
-	"GoVersion": "go1.5.1",
-	"Packages": [
-		"./..."
-	],
+	"GoVersion": "go1.7",
+	"GodepVersion": "v74",
 	"Deps": [
 		{
 			"ImportPath": "github.com/eraclitux/cfgp",
-			"Comment": "v1.0.0-alpha-2-g3d4bec5",
-			"Rev": "3d4bec502cbba30395d1ebfd3eb75902552bbede"
+			"Comment": "v1.1.0-beta-2-g87a00a3",
+			"Rev": "87a00a39d049d7a19c7550a905ad371c0535a030"
 		},
 		{
 			"ImportPath": "github.com/eraclitux/goparallel",
-			"Comment": "v0.1.0-alpha",
-			"Rev": "92321ff69ca8311f0ced647903f28bb595a9de78"
+			"Comment": "v0.1.0-alpha-1-g1d54396",
+			"Rev": "1d543961ab300b34113fde150b9df38873a898d1"
 		},
 		{
 			"ImportPath": "github.com/eraclitux/stracer",
-			"Rev": "eb32003f6c55049ac3dc2718bffb0d47cfa5939d"
+			"Rev": "a0f01b59ef9b8f3fb86e5aef281207fc107ce013"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ssh",
+			"Rev": "1351f936d976c60a0a48d728281922cf63eafb8d"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh/agent",
 			"Rev": "1351f936d976c60a0a48d728281922cf63eafb8d"
 		}
 	]

@@ -79,6 +79,8 @@ Available parameters can be showed with ``rim -h``, lowercase first letter when 
 Build/Install
 -------------
 
+The easiest way is to get already compiled binaries for your system from Github's realeses page.
+
 With a proper Go environment installed just run::
 
         godep go build
